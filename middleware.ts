@@ -2,21 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 
 export async function middleware(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  
+  // Allow static assets (images, css, js, etc.)
+  if (
+    pathname.startsWith('/_next/') ||
+    pathname.startsWith('/api/') ||
+    pathname.startsWith('/static/') ||
+    pathname.startsWith('/public/') ||
+    pathname.includes('.') // This catches files with extensions like .png, .jpg, .ico, etc.
+  ) {
+    return NextResponse.next();
+  }
+
   const sessionCookie = getSessionCookie(request);
   
   // Allow public routes
-  if (request.nextUrl.pathname === "/") {
+  if (pathname === "/") {
     return NextResponse.next();
   }
   
   // Allow auth routes
-  if (request.nextUrl.pathname.startsWith("/api/auth") || 
-      request.nextUrl.pathname.startsWith("/sign-in") || 
-      request.nextUrl.pathname.startsWith("/sign-up")) {
+  if (pathname.startsWith("/sign-in") || pathname.startsWith("/sign-up")) {
     return NextResponse.next();
   }
   
-  // Redirect to sign-in if no session cookie
+  // Redirect to sign-in if no session cookie for protected routes
   if (!sessionCookie) {
     return NextResponse.redirect(new URL("/sign-in", request.url));
   }
@@ -28,11 +39,11 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except for the ones starting with:
-     * - api (API routes)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - Files with extensions (images, css, js, etc.)
      */
-    "/((?!api|_next/static|_next/image|favicon.ico|public).*)",
+    "/((?!_next/static|_next/image|favicon.ico).*)",
   ],
 };
