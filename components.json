@@ -18,5 +18,15 @@
     "lib": "@/lib",
     "hooks": "@/hooks"
   },
-  "registries": {}
+  "registries": {
+    "@tailark": "https://tailark.com/r/{name}.json",
+    "@aceternity": "https://ui.aceternity.com/registry/{name}.json",
+    "@magicui": "https://magicui.design/r/{name}.json",
+    "@reactbit": "https://reactbits.dev/r/{name}.json",
+    "@paceui": "https://ui.paceui.com/r/{name}.json",
+    "@aisdk": "https://registry.ai-sdk.dev/{name}.json",
+    "@aitool": "https://ai-tools-registry.vercel.app/r/{name}.json",
+    "@alpine": "https://alpine-registry.vercel.app/r/{name}.json",
+    "@kibo": "https://www.kibo-ui.com/r/{name}.json"
+  }
 }
