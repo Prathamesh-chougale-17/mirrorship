@@ -37,6 +37,9 @@ export async function GET(req: NextRequest) {
     // Get activity summary for charts
     const activitySummary = await DatabaseService.getActivitySummary(user.id, 30);
 
+    // Get kanban summary
+    const kanbanSummary = await DatabaseService.getKanbanSummary(user.id);
+
     // Get mood trends from recent entries
     const entriesWithMood = recentEntries.filter(entry => entry.mood !== undefined);
     const moodTrend = entriesWithMood.length > 0 ? {
@@ -78,7 +81,14 @@ export async function GET(req: NextRequest) {
         wordCount: entry.wordCount,
         aiSummary: entry.aiSummary?.substring(0, 100) + (entry.aiSummary && entry.aiSummary.length > 100 ? '...' : ''),
       })),
-      moodTrend,
+      trends: {
+        mood: moodTrend?.data || [],
+        wordCount: recentEntries.map(entry => ({
+          date: entry.date,
+          words: entry.wordCount || 0
+        })).reverse()
+      },
+      kanbanSummary,
       activitySummary: activitySummary.map(activity => ({
         type: activity._id,
         count: activity.count,

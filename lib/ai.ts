@@ -18,8 +18,7 @@ export class AIService {
       const { text } = await generateText({
         model: this.model,
         prompt,
-        temperature: 0.7,
-        maxTokens: 500,
+        temperature: 0.7
       });
 
       // Parse the structured response
@@ -44,7 +43,6 @@ export class AIService {
         model: this.model,
         prompt,
         temperature: 0.6,
-        maxTokens: 700,
       });
 
       return this.parseWeeklySummaryResponse(text);
@@ -77,7 +75,6 @@ Respond in JSON format:
         model: this.model,
         prompt,
         temperature: 0.3,
-        maxTokens: 200,
       });
 
       const parsed = JSON.parse(text);
@@ -112,7 +109,6 @@ Respond with a JSON array of strings:
         model: this.model,
         prompt,
         temperature: 0.4,
-        maxTokens: 100,
       });
 
       const tags = JSON.parse(text);

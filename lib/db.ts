@@ -303,4 +303,38 @@ export class DatabaseService {
       recentActivities: recentActivities.length
     };
   }
+
+  static async getKanbanSummary(userId: string) {
+    const db = await this.getDb();
+    
+    const [
+      todoCount,
+      inProgressCount,
+      doneCount,
+      totalCount
+    ] = await Promise.all([
+      db.collection<KanbanNote>(COLLECTIONS.KANBAN_NOTES).countDocuments({ 
+        userId, 
+        column: "todo" 
+      }),
+      db.collection<KanbanNote>(COLLECTIONS.KANBAN_NOTES).countDocuments({ 
+        userId, 
+        column: "in-progress" 
+      }),
+      db.collection<KanbanNote>(COLLECTIONS.KANBAN_NOTES).countDocuments({ 
+        userId, 
+        column: "done" 
+      }),
+      db.collection<KanbanNote>(COLLECTIONS.KANBAN_NOTES).countDocuments({ 
+        userId 
+      })
+    ]);
+
+    return {
+      todo: todoCount,
+      'in-progress': inProgressCount,
+      done: doneCount,
+      total: totalCount
+    };
+  }
 }

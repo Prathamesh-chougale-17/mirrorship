@@ -176,9 +176,9 @@ export default function DashboardPage() {
             <Target className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{dashboardData?.kanbanSummary.total || 0}</div>
+            <div className="text-2xl font-bold">{dashboardData?.kanbanSummary?.total || 0}</div>
             <p className="text-xs text-muted-foreground">
-              {dashboardData?.kanbanSummary.done || 0} completed
+              {dashboardData?.kanbanSummary?.done || 0} completed
             </p>
           </CardContent>
         </Card>
@@ -213,7 +213,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
-                  <LineChart data={dashboardData?.trends.mood || []}>
+                  <LineChart data={dashboardData?.trends?.mood || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" fontSize={12} />
                     <YAxis domain={[1, 5]} fontSize={12} />
@@ -239,7 +239,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={dashboardData?.trends.wordCount || []}>
+                  <BarChart data={dashboardData?.trends?.wordCount || []}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" fontSize={12} />
                     <YAxis fontSize={12} />
@@ -314,19 +314,19 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>To Do</span>
-                  <span>{dashboardData?.kanbanSummary.todo || 0}</span>
+                  <span>{dashboardData?.kanbanSummary?.todo || 0}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>In Progress</span>
-                  <span>{dashboardData?.kanbanSummary['in-progress'] || 0}</span>
+                  <span>{dashboardData?.kanbanSummary?.['in-progress'] || 0}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>Completed</span>
-                  <span>{dashboardData?.kanbanSummary.done || 0}</span>
+                  <span>{dashboardData?.kanbanSummary?.done || 0}</span>
                 </div>
               </div>
               <Progress 
-                value={dashboardData?.kanbanSummary.total ? 
+                value={dashboardData?.kanbanSummary?.total ? 
                   (dashboardData.kanbanSummary.done / dashboardData.kanbanSummary.total) * 100 : 0
                 } 
               />
