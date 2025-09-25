@@ -3,7 +3,7 @@ import { google } from "@ai-sdk/google";
 import { DiaryEntry, ActivityEntry } from "./models";
 
 export class AIService {
-  private static model = google("gemini-1.5-flash");
+  private static model = google("gemini-2.5-flash");
 
   /**
    * Generate a daily summary from diary entry and activities
