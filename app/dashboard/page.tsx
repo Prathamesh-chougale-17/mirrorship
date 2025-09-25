@@ -21,6 +21,15 @@ import {
   Clock,
   GitBranch
 } from "lucide-react";
+import { 
+  ContributionGraph, 
+  ContributionGraphCalendar, 
+  ContributionGraphBlock, 
+  ContributionGraphFooter, 
+  ContributionGraphTotalCount, 
+  ContributionGraphLegend,
+  type Activity as ContributionActivity
+} from "@/components/ui/kibo-ui/contribution-graph";
 import Link from "next/link";
 import { toast } from "sonner";
 
@@ -73,10 +82,83 @@ export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [contributionData, setContributionData] = useState({
+    github: {
+      currentStreak: 7,
+      thisWeek: 23,
+      bestStreak: 45,
+      lastSevenDays: [4, 2, 0, 3, 1, 5, 2]
+    },
+    leetcode: {
+      solveStreak: 12,
+      totalSolved: 247,
+      thisWeek: 8,
+      easy: 120,
+      medium: 98,
+      hard: 29
+    }
+  });
+
+  // Generate GitHub-style contribution data (last 12 months)
+  const generateContributionData = (type: 'github' | 'leetcode'): ContributionActivity[] => {
+    const data: ContributionActivity[] = [];
+    const today = new Date();
+    const startDate = new Date(today);
+    startDate.setMonth(startDate.getMonth() - 12);
+
+    for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0];
+      let count = 0;
+      let level = 0;
+
+      if (type === 'github') {
+        // Simulate GitHub contributions (commits, PRs, etc.)
+        const random = Math.random();
+        if (random > 0.3) { // 70% chance of activity
+          count = Math.floor(Math.random() * 15) + 1;
+          level = count === 0 ? 0 : Math.min(4, Math.floor(count / 4) + 1);
+        }
+      } else {
+        // Simulate LeetCode problem solving
+        const random = Math.random();
+        if (random > 0.4) { // 60% chance of solving problems
+          count = Math.floor(Math.random() * 8) + 1;
+          level = count === 0 ? 0 : Math.min(4, Math.floor(count / 2) + 1);
+        }
+      }
+
+      data.push({
+        date: dateStr,
+        count,
+        level
+      });
+    }
+
+    return data;
+  };
+
+  const githubContributions = generateContributionData('github');
+  const leetcodeContributions = generateContributionData('leetcode');
 
   useEffect(() => {
     if (session?.user) {
       fetchDashboardData();
+      // Simulate real-time updates (in a real app, this would come from APIs)
+      const interval = setInterval(() => {
+        const now = new Date();
+        if (now.getHours() === 0 && now.getMinutes() === 0) {
+          // Reset daily at midnight
+          setContributionData(prev => ({
+            ...prev,
+            github: {
+              ...prev.github,
+              lastSevenDays: [Math.floor(Math.random() * 6), ...prev.github.lastSevenDays.slice(0, 6)]
+            }
+          }));
+        }
+      }, 60000); // Check every minute
+
+      return () => clearInterval(interval);
     }
   }, [session?.user]);
 
@@ -96,6 +178,19 @@ export default function DashboardPage() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getMotivationalMessage = () => {
+    const totalStreak = contributionData.github.currentStreak + contributionData.leetcode.solveStreak;
+    const githubTotal = githubContributions.reduce((sum, day) => sum + day.count, 0);
+    const leetcodeTotal = leetcodeContributions.reduce((sum, day) => sum + day.count, 0);
+    
+    if (totalStreak > 30) return "🏆 Incredible! You're a coding machine!";
+    if (totalStreak > 20) return "🔥 You're on fire! Keep the momentum going!";
+    if (totalStreak > 10) return "💪 Great consistency! You're building strong habits!";
+    if (totalStreak > 5) return "🚀 Good streak! Keep pushing forward!";
+    if (githubTotal + leetcodeTotal > 100) return "📈 Amazing progress this year!";
+    return "✨ Every day is a new opportunity to grow!";
   };
 
   if (isPending || isLoading) {
@@ -140,6 +235,222 @@ export default function DashboardPage() {
             </Link>
           </Button>
         </div>
+      </div>
+
+      {/* Motivational Banner */}
+      <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-lg p-4 border border-blue-200/50 dark:border-blue-800/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-500/10 rounded-full">
+              <TrendingUp className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-blue-900 dark:text-blue-100">Daily Growth Tracker</h3>
+              <p className="text-sm text-blue-700 dark:text-blue-300">{getMotivationalMessage()}</p>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="text-lg font-bold text-blue-900 dark:text-blue-100">
+              {contributionData.github.currentStreak + contributionData.leetcode.solveStreak} days
+            </div>
+            <div className="text-xs text-blue-600 dark:text-blue-400">Combined streak</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Contribution Streaks */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        {/* GitHub Contributions */}
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-gray-900 to-gray-700 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-full">
+                  <GitBranch className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">GitHub Contributions</CardTitle>
+                  <CardDescription className="text-gray-300">Keep your coding streak alive</CardDescription>
+                </div>
+              </div>
+              <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
+                {contributionData.github.lastSevenDays[6] > 0 ? "Today ✅" : "Pending"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Current Streak</span>
+                <div className="flex items-center gap-2">
+                  <Flame className="h-4 w-4 text-orange-500" />
+                  <span className="font-bold text-lg">{contributionData.github.currentStreak} days</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">This Week</span>
+                <span className="text-green-600 font-medium">{contributionData.github.thisWeek} contributions</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Best Streak</span>
+                <span className="text-muted-foreground">{contributionData.github.bestStreak} days</span>
+              </div>
+              {/* GitHub Contribution Heatmap */}
+              <div className="mt-4 -mx-2">
+                <div className="text-xs text-muted-foreground mb-2 px-2">Last 12 months of contributions</div>
+                <ContributionGraph 
+                  data={githubContributions} 
+                  blockSize={10}
+                  blockMargin={2}
+                  fontSize={11}
+                  className="text-xs"
+                >
+                  <ContributionGraphCalendar hideMonthLabels>
+                    {({ activity, dayIndex, weekIndex }) => (
+                      <ContributionGraphBlock
+                        activity={activity}
+                        dayIndex={dayIndex}
+                        weekIndex={weekIndex}
+                        className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-green-200 data-[level='2']:fill-green-400 data-[level='3']:fill-green-600 data-[level='4']:fill-green-800 dark:data-[level='1']:fill-green-900 dark:data-[level='2']:fill-green-700 dark:data-[level='3']:fill-green-500 dark:data-[level='4']:fill-green-300"
+                        title={`${activity.count} contributions on ${activity.date}`}
+                      />
+                    )}
+                  </ContributionGraphCalendar>
+                  <ContributionGraphFooter className="text-xs px-2">
+                    <ContributionGraphTotalCount />
+                    <ContributionGraphLegend />
+                  </ContributionGraphFooter>
+                </ContributionGraph>
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-muted-foreground">
+                    {contributionData.github.currentStreak > 0 ? 
+                      `🔥 ${contributionData.github.currentStreak} day streak!` : 
+                      "Start your coding streak today!"
+                    }
+                  </div>
+                  <Button size="sm" variant="outline" asChild>
+                    <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-xs">
+                      Open GitHub
+                      <ArrowRight className="h-3 w-3 ml-1" />
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* LeetCode Progress */}
+        <Card className="overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-white/10 rounded-full">
+                  <Target className="h-5 w-5" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">LeetCode Progress</CardTitle>
+                  <CardDescription className="text-orange-100">Daily problem solving</CardDescription>
+                </div>
+              </div>
+              <Badge variant="secondary" className="bg-orange-500/20 text-orange-100 border-orange-400/30">
+                {contributionData.leetcode.thisWeek > 0 ? "Active 💪" : "Start Today!"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Solve Streak</span>
+                <div className="flex items-center gap-2">
+                  <Flame className="h-4 w-4 text-orange-500" />
+                  <span className="font-bold text-lg">{contributionData.leetcode.solveStreak} days</span>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Problems Solved</span>
+                <span className="text-orange-600 font-medium">{contributionData.leetcode.totalSolved} / 3000+</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">This Week</span>
+                <span className="text-muted-foreground">{contributionData.leetcode.thisWeek} problems</span>
+              </div>
+              {/* LeetCode Problem Solving Heatmap */}
+              <div className="mt-4 -mx-2">
+                <div className="text-xs text-muted-foreground mb-2 px-2">Problem solving activity</div>
+                <ContributionGraph 
+                  data={leetcodeContributions} 
+                  blockSize={10}
+                  blockMargin={2}
+                  fontSize={11}
+                  className="text-xs"
+                  labels={{
+                    totalCount: "{{count}} problems solved in {{year}}",
+                    legend: { less: "0", more: "8+" }
+                  }}
+                >
+                  <ContributionGraphCalendar hideMonthLabels>
+                    {({ activity, dayIndex, weekIndex }) => (
+                      <ContributionGraphBlock
+                        activity={activity}
+                        dayIndex={dayIndex}
+                        weekIndex={weekIndex}
+                        className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-orange-200 data-[level='2']:fill-orange-400 data-[level='3']:fill-orange-600 data-[level='4']:fill-orange-800 dark:data-[level='1']:fill-orange-900 dark:data-[level='2']:fill-orange-700 dark:data-[level='3']:fill-orange-500 dark:data-[level='4']:fill-orange-300"
+                        title={`${activity.count} problems solved on ${activity.date}`}
+                      />
+                    )}
+                  </ContributionGraphCalendar>
+                  <ContributionGraphFooter className="text-xs px-2">
+                    <ContributionGraphTotalCount />
+                    <ContributionGraphLegend />
+                  </ContributionGraphFooter>
+                </ContributionGraph>
+              </div>
+              
+              {/* Difficulty Breakdown */}
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                  <span>Difficulty Distribution</span>
+                  <span>{contributionData.leetcode.totalSolved} total</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-xs">
+                  <div className="text-center">
+                    <div className="font-semibold text-green-600">{contributionData.leetcode.easy}</div>
+                    <div className="text-muted-foreground">Easy</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold text-yellow-600">{contributionData.leetcode.medium}</div>
+                    <div className="text-muted-foreground">Medium</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-semibold text-red-600">{contributionData.leetcode.hard}</div>
+                    <div className="text-muted-foreground">Hard</div>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 pt-4 border-t">
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-muted-foreground">
+                    {contributionData.leetcode.solveStreak > 7 ? 
+                      `🚀 Amazing ${contributionData.leetcode.solveStreak} day streak!` : 
+                      contributionData.leetcode.solveStreak > 0 ?
+                      `💪 ${contributionData.leetcode.solveStreak} day streak!` :
+                      "Time to solve some problems!"
+                    }
+                  </div>
+                  <Button size="sm" variant="outline" asChild>
+                    <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer" className="text-xs">
+                      Open LeetCode
+                      <ArrowRight className="h-3 w-3 ml-1" />
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Quick Stats */}
