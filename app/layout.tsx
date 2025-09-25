@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
-import { Navbar } from "@/components/navbar";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -15,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mirrorship - Secure App",
-  description: "A secure application with Better Auth authentication",
+  title: "Mirrorship - Personal Reflection Platform",
+  description: "A personal reflection and monitoring platform with AI-powered insights, diary entries, and activity tracking.",
 };
 
 export default function RootLayout({
@@ -27,12 +28,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}
       >
         <Navbar />
-        <main>
+        <main className="flex-1">
           {children}
         </main>
+        <Footer />
         <Toaster />
       </body>
     </html>

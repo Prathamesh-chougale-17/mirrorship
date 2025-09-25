@@ -8,22 +8,6 @@ import { toast } from "sonner";
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const router = useRouter();
-
-  const handleSignOut = async () => {
-    try {
-      await signOut({
-        fetchOptions: {
-          onSuccess: () => {
-            toast.success("Signed out successfully!");
-            router.push("/");
-          },
-        },
-      });
-    } catch (error) {
-      toast.error("Failed to sign out");
-    }
-  };
-
   if (isPending) {
     return (
       <div className="min-h-screen flex items-center justify-center">

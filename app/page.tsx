@@ -1,151 +1,189 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useSession } from "@/lib/auth-client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BookOpen, BarChart3, Brain, Shield, Zap, Users } from "lucide-react";
 
 export default function Home() {
   const { data: session, isPending } = useSession();
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        {/* Hero Section */}
-        <div className="text-center space-y-8 mb-16">
-          <div className="flex justify-center">
-            <Image
-              className="dark:invert"
-              src="/next.svg"
-              alt="Next.js logo"
-              width={200}
-              height={42}
-              priority
-            />
-          </div>
-          
-          <div className="space-y-4">
-            <h1 className="text-4xl sm:text-6xl font-bold text-gray-900 dark:text-white">
-              Welcome to{" "}
-              <span className="text-blue-600">Mirrorship</span>
+    <div className="flex flex-col min-h-screen">
+      {/* Hero Section */}
+      <section className="relative overflow-hidden bg-gradient-to-b from-blue-50 to-white dark:from-blue-950/20 dark:to-background">
+        <div className="container px-4 py-20 mx-auto text-center">
+          <div className="max-w-4xl mx-auto">
+            <h1 className="text-4xl font-bold tracking-tight sm:text-6xl mb-6 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              Your Personal Reflection Platform
             </h1>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
-              A secure Next.js application with Better Auth authentication, 
-              featuring Google OAuth and beautiful UI components.
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto">
+              Mirrorship combines daily journaling with AI-powered insights and activity tracking. 
+              Write, reflect, and discover patterns in your personal growth journey.
+            </p>
+            
+            {/* CTA Based on Auth Status */}
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
+              {isPending ? (
+                <div className="h-12 w-32 bg-muted animate-pulse rounded-lg" />
+              ) : session ? (
+                <div className="space-y-4">
+                  <p className="text-lg text-green-600 dark:text-green-400">
+                    Welcome back, {session.user.name}! 👋
+                  </p>
+                  <div className="flex gap-4 justify-center">
+                    <Button asChild size="lg" className="text-lg px-8">
+                      <Link href="/dashboard">
+                        <BarChart3 className="mr-2 h-5 w-5" />
+                        Dashboard
+                      </Link>
+                    </Button>
+                    <Button asChild variant="outline" size="lg" className="text-lg px-8">
+                      <Link href="/diary">
+                        <BookOpen className="mr-2 h-5 w-5" />
+                        Write Entry
+                      </Link>
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <Button asChild size="lg" className="text-lg px-8">
+                    <Link href="/sign-up">
+                      Get Started Free
+                    </Link>
+                  </Button>
+                  <Button asChild variant="outline" size="lg" className="text-lg px-8">
+                    <Link href="/sign-in">
+                      Sign In
+                    </Link>
+                  </Button>
+                </>
+              )}
+            </div>
+
+            {/* Feature Preview */}
+            <div className="relative mx-auto max-w-4xl">
+              <div className="aspect-video bg-gradient-to-br from-blue-100 to-purple-100 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border shadow-2xl overflow-hidden">
+                <div className="p-8 h-full flex items-center justify-center">
+                  <div className="text-center space-y-4">
+                    <div className="flex justify-center space-x-4">
+                      <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center">
+                        <BookOpen className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center">
+                        <Brain className="h-6 w-6 text-white" />
+                      </div>
+                      <div className="w-12 h-12 bg-green-500 rounded-lg flex items-center justify-center">
+                        <BarChart3 className="h-6 w-6 text-white" />
+                      </div>
+                    </div>
+                    <p className="text-muted-foreground">
+                      Diary • AI Insights • Activity Tracking
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-20 bg-muted/50">
+        <div className="container px-4 mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold mb-4">Everything you need for personal growth</h2>
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Combine journaling, AI insights, and activity tracking in one beautiful platform
             </p>
           </div>
 
-          {/* Authentication Status */}
-          <div className="max-w-md mx-auto">
-            {isPending ? (
-              <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              </div>
-            ) : session ? (
-              <Card className="border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-800">
-                <CardHeader className="text-center">
-                  <CardTitle className="text-green-800 dark:text-green-200 flex items-center justify-center gap-2">
-                    ✅ Welcome back, {session.user.name}!
-                  </CardTitle>
-                  <CardDescription className="text-green-600 dark:text-green-300">
-                    You are successfully authenticated
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <Button asChild className="w-full">
-                    <Link href="/dashboard">Go to Dashboard</Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card>
-                <CardHeader className="text-center">
-                  <CardTitle>Get Started</CardTitle>
-                  <CardDescription>
-                    Sign in to access protected features and your dashboard
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <Button asChild className="w-full">
-                    <Link href="/sign-in">Sign In</Link>
-                  </Button>
-                  <Button variant="outline" asChild className="w-full">
-                    <Link href="/sign-up">Create Account</Link>
-                  </Button>
-                </CardContent>
-              </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <Card>
+              <CardHeader>
+                <BookOpen className="h-12 w-12 text-blue-500 mb-4" />
+                <CardTitle>Rich Diary Editor</CardTitle>
+                <CardDescription>
+                  Write your thoughts with a beautiful, distraction-free editor powered by advanced text formatting
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Brain className="h-12 w-12 text-purple-500 mb-4" />
+                <CardTitle>AI-Powered Insights</CardTitle>
+                <CardDescription>
+                  Get daily summaries and insights from your entries using advanced AI to track your emotional patterns
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <BarChart3 className="h-12 w-12 text-green-500 mb-4" />
+                <CardTitle>Activity Dashboard</CardTitle>
+                <CardDescription>
+                  Track your coding, social media, and creative activities with beautiful charts and analytics
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Shield className="h-12 w-12 text-red-500 mb-4" />
+                <CardTitle>Privacy First</CardTitle>
+                <CardDescription>
+                  Your personal reflections are encrypted and private. Only you have access to your thoughts and data
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Zap className="h-12 w-12 text-yellow-500 mb-4" />
+                <CardTitle>Smart Reminders</CardTitle>
+                <CardDescription>
+                  Get gentle nudges to maintain your journaling habit and track your consistency over time
+                </CardDescription>
+              </CardHeader>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Users className="h-12 w-12 text-cyan-500 mb-4" />
+                <CardTitle>Personal Growth</CardTitle>
+                <CardDescription>
+                  Discover patterns in your thoughts, mood, and productivity to make meaningful life improvements
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600">
+        <div className="container px-4 mx-auto text-center">
+          <div className="max-w-3xl mx-auto text-white">
+            <h2 className="text-3xl font-bold mb-4">
+              Start Your Reflection Journey Today
+            </h2>
+            <p className="text-xl mb-8 opacity-90">
+              Join thousands of people using Mirrorship to understand themselves better and achieve personal growth.
+            </p>
+            {!session && (
+              <Button asChild size="lg" variant="secondary" className="text-lg px-8">
+                <Link href="/sign-up">
+                  Get Started - It's Free
+                </Link>
+              </Button>
             )}
           </div>
         </div>
-
-        {/* Features Section */}
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3 mb-16">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                🔐 Secure Authentication
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 dark:text-gray-300">
-                Built with Better Auth featuring Google OAuth and email/password authentication.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                🛡️ Route Protection
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 dark:text-gray-300">
-                Middleware-based route protection ensures only authenticated users access protected content.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                🎨 Beautiful UI
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-gray-600 dark:text-gray-300">
-                Consistent design system using Shadcn UI components with dark mode support.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tech Stack */}
-        <div className="text-center space-y-4">
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Built with Modern Technology
-          </h2>
-          <div className="flex flex-wrap justify-center gap-4 items-center">
-            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border">
-              <Image src="/next.svg" alt="Next.js" width={24} height={24} className="dark:invert" />
-              <span className="font-medium">Next.js 15</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border">
-              <span className="text-2xl">🔐</span>
-              <span className="font-medium">Better Auth</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border">
-              <span className="text-2xl">🍃</span>
-              <span className="font-medium">MongoDB</span>
-            </div>
-            <div className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 rounded-lg border">
-              <span className="text-2xl">🎨</span>
-              <span className="font-medium">Tailwind CSS</span>
-            </div>
-          </div>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }
