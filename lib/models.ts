@@ -102,6 +102,69 @@ export interface UserPreferences {
   updatedAt: Date;
 }
 
+// GitHub Contribution Model
+export interface GitHubContribution {
+  _id?: ObjectId;
+  userId: string;
+  date: Date;
+  commitCount: number;
+  repositories: {
+    name: string;
+    commits: number;
+    url?: string;
+  }[];
+  pullRequests?: {
+    opened: number;
+    merged: number;
+    reviewed: number;
+  };
+  issues?: {
+    opened: number;
+    closed: number;
+  };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// LeetCode Submission Model
+export interface LeetCodeSubmission {
+  _id?: ObjectId;
+  userId: string;
+  submissionId: string;
+  problemTitle: string;
+  problemSlug: string;
+  difficulty: "Easy" | "Medium" | "Hard";
+  status: "Accepted" | "Wrong Answer" | "Time Limit Exceeded" | "Runtime Error" | "Compile Error";
+  language: string;
+  runtime?: number; // milliseconds
+  memory?: number; // bytes
+  submissionDate: Date;
+  problemUrl?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// User Platform Settings Model
+export interface UserPlatformSettings {
+  _id?: ObjectId;
+  userId: string;
+  github: {
+    username?: string;
+    accessToken?: string; // encrypted
+    lastSyncDate?: Date;
+    syncEnabled: boolean;
+  };
+  leetcode: {
+    username?: string;
+    sessionCookie?: string; // encrypted
+    lastSyncDate?: Date;
+    syncEnabled: boolean;
+  };
+  syncFrequency: "manual" | "hourly" | "daily" | "weekly";
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Collection names
 export const COLLECTIONS = {
   USERS: "users",
@@ -110,4 +173,7 @@ export const COLLECTIONS = {
   ACTIVITY_ENTRIES: "activity_entries",
   AI_SUMMARIES: "ai_summaries",
   USER_PREFERENCES: "user_preferences",
+  GITHUB_CONTRIBUTIONS: "github_contributions",
+  LEETCODE_SUBMISSIONS: "leetcode_submissions",
+  USER_PLATFORM_SETTINGS: "user_platform_settings"
 } as const;

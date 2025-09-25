@@ -327,15 +327,22 @@ export default function DashboardPage() {
                   <div className="text-xs text-muted-foreground">
                     {contributionData.github.currentStreak > 0 ? 
                       `🔥 ${contributionData.github.currentStreak} day streak!` : 
-                      "Start your coding streak today!"
+                      "Sync your GitHub to start tracking!"
                     }
                   </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-xs">
-                      Open GitHub
-                      <ArrowRight className="h-3 w-3 ml-1" />
-                    </a>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href="/sync" className="text-xs">
+                        Sync Data
+                        <GitBranch className="h-3 w-3 ml-1" />
+                      </Link>
+                    </Button>
+                    <Button size="sm" variant="ghost" asChild>
+                      <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-xs">
+                        <ArrowRight className="h-3 w-3" />
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -437,15 +444,22 @@ export default function DashboardPage() {
                       `🚀 Amazing ${contributionData.leetcode.solveStreak} day streak!` : 
                       contributionData.leetcode.solveStreak > 0 ?
                       `💪 ${contributionData.leetcode.solveStreak} day streak!` :
-                      "Time to solve some problems!"
+                      "Sync your LeetCode to start tracking!"
                     }
                   </div>
-                  <Button size="sm" variant="outline" asChild>
-                    <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer" className="text-xs">
-                      Open LeetCode
-                      <ArrowRight className="h-3 w-3 ml-1" />
-                    </a>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" asChild>
+                      <Link href="/sync" className="text-xs">
+                        Sync Data
+                        <Target className="h-3 w-3 ml-1" />
+                      </Link>
+                    </Button>
+                    <Button size="sm" variant="ghost" asChild>
+                      <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer" className="text-xs">
+                        <ArrowRight className="h-3 w-3" />
+                      </a>
+                    </Button>
+                  </div>
                 </div>
               </div>
             </div>
