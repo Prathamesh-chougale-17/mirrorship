@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from "@/auth";
-import { DatabaseService } from '../../../../lib/mongodb';
+import { DatabaseService } from '@/lib/mongodb';
 import { z } from 'zod';
+import { GitHubContribution } from '@/lib/models';
 
 async function getAuthUser(req: NextRequest) {
   try {
@@ -32,7 +33,7 @@ async function fetchFromGitHubGraphQL(
   accessToken: string,
   startDate?: Date,
   endDate?: Date
-): Promise<Array<Omit<import('../../../../lib/models').GitHubContribution, '_id' | 'userId' | 'createdAt' | 'updatedAt'>>> {
+): Promise<Array<Omit<GitHubContribution, '_id' | 'userId' | 'createdAt' | 'updatedAt'>>> {
   const headers = {
     'Authorization': `bearer ${accessToken}`,
     'Content-Type': 'application/json'
@@ -57,6 +58,26 @@ async function fetchFromGitHubGraphQL(
               firstDay
             }
           }
+          pullRequestContributions(first: 100) {
+            totalCount
+            nodes {
+              pullRequest {
+                createdAt
+                mergedAt
+                state
+              }
+            }
+          }
+          issueContributions(first: 100) {
+            totalCount
+            nodes {
+              issue {
+                createdAt
+                closedAt
+                state
+              }
+            }
+          }
         }
       }
     }
@@ -79,33 +100,78 @@ async function fetchFromGitHubGraphQL(
   }
 
   const weeks = data.data.user.contributionsCollection.contributionCalendar.weeks;
-  const contributions: Array<Omit<import('../../../../lib/models').GitHubContribution, '_id' | 'userId' | 'createdAt' | 'updatedAt'>> = [];
+  const pullRequests = data.data.user.contributionsCollection.pullRequestContributions?.nodes || [];
+  const issues = data.data.user.contributionsCollection.issueContributions?.nodes || [];
   
-  // Process contribution data from GitHub API response (like cp-api implementation)
+  const contributions: Array<Omit<GitHubContribution, '_id' | 'userId' | 'createdAt' | 'updatedAt'>> = [];
+  
+  // Create maps for PR and issue data by date
+  const prsByDate = new Map<string, { opened: number; merged: number; reviewed: number }>();
+  const issuesByDate = new Map<string, { opened: number; closed: number }>();
+  
+  // Process PR data
+  pullRequests.forEach((prNode: any) => {
+    const pr = prNode.pullRequest;
+    const createdDate = new Date(pr.createdAt).toISOString().split('T')[0];
+    
+    if (!prsByDate.has(createdDate)) {
+      prsByDate.set(createdDate, { opened: 0, merged: 0, reviewed: 0 });
+    }
+    
+    const prData = prsByDate.get(createdDate)!;
+    prData.opened += 1;
+    
+    if (pr.mergedAt) {
+      const mergedDate = new Date(pr.mergedAt).toISOString().split('T')[0];
+      if (!prsByDate.has(mergedDate)) {
+        prsByDate.set(mergedDate, { opened: 0, merged: 0, reviewed: 0 });
+      }
+      prsByDate.get(mergedDate)!.merged += 1;
+    }
+  });
+  
+  // Process issue data
+  issues.forEach((issueNode: any) => {
+    const issue = issueNode.issue;
+    const createdDate = new Date(issue.createdAt).toISOString().split('T')[0];
+    
+    if (!issuesByDate.has(createdDate)) {
+      issuesByDate.set(createdDate, { opened: 0, closed: 0 });
+    }
+    
+    const issueData = issuesByDate.get(createdDate)!;
+    issueData.opened += 1;
+    
+    if (issue.closedAt) {
+      const closedDate = new Date(issue.closedAt).toISOString().split('T')[0];
+      if (!issuesByDate.has(closedDate)) {
+        issuesByDate.set(closedDate, { opened: 0, closed: 0 });
+      }
+      issuesByDate.get(closedDate)!.closed += 1;
+    }
+  });
+  
+  // Process contribution data from GitHub API response
   weeks.forEach((week: any) => {
     week.contributionDays.forEach((day: any) => {
-      if (day.contributionCount > 0) {
-        const contributionDate = new Date(day.date);
-        
-        contributions.push({
-          date: contributionDate,
-          commitCount: day.contributionCount,
-          repositories: [{
-            name: `${username}/repository`,
-            commits: day.contributionCount,
-            url: `https://github.com/${username}`
-          }],
-          pullRequests: {
-            opened: Math.floor(Math.random() * 3),
-            merged: Math.floor(Math.random() * 2),
-            reviewed: Math.floor(Math.random() * 2)
-          },
-          issues: {
-            opened: Math.floor(Math.random() * 2),
-            closed: Math.floor(Math.random() * 2)
-          }
-        });
-      }
+      const contributionDate = new Date(day.date);
+      const dateStr = day.date;
+      
+      // Always create an entry for each day (even if 0 commits) to maintain calendar structure
+      const prData = prsByDate.get(dateStr) || { opened: 0, merged: 0, reviewed: 0 };
+      const issueData = issuesByDate.get(dateStr) || { opened: 0, closed: 0 };
+      
+      contributions.push({
+        date: contributionDate,
+        commitCount: day.contributionCount,
+        repositories: day.contributionCount > 0 ? [{
+          name: `${username}/repository`,
+          commits: day.contributionCount,
+          url: `https://github.com/${username}`
+        }] : [],
+        pullRequests: prData,
+        issues: issueData
+      });
     });
   });
 
@@ -117,7 +183,7 @@ async function fetchGitHubContributions(
   accessToken?: string,
   startDate?: Date,
   endDate?: Date
-): Promise<Array<Omit<import('../../../../lib/models').GitHubContribution, '_id' | 'userId' | 'createdAt' | 'updatedAt'>>> {
+): Promise<Array<Omit<import('@/lib/models').GitHubContribution, '_id' | 'userId' | 'createdAt' | 'updatedAt'>>> {
   
   if (!accessToken) {
     console.warn('No GitHub access token provided, falling back to mock data');
