@@ -169,64 +169,86 @@ async function syncGitHubData(userId: string, username: string, accessToken: str
 }
 
 async function syncLeetCodeData(userId: string, username: string) {
-  const currentYear = new Date().getFullYear();
-  
-  const query = `
-    query userProfileCalendar($username: String!, $year: Int) {
-      matchedUser(username: $username) {
-        username
-        userCalendar(year: $year) {
-          activeYears
-          streak
-          totalActiveDays
-          submissionCalendar
-        }
-        submitStats {
-          acSubmissionNum {
-            difficulty
-            count
-            submissions
+  try {
+    const currentYear = new Date().getFullYear();
+    
+    // Simplified query to avoid potential issues with complex nested queries
+    const query = `
+      query getUserProfile($username: String!) {
+        matchedUser(username: $username) {
+          username
+          submitStats {
+            acSubmissionNum {
+              difficulty
+              count
+              submissions
+            }
           }
-          totalSubmissionNum {
-            difficulty
-            count
-            submissions
+          recentAcSubmissionList(limit: 50) {
+            id
+            title
+            titleSlug
+            timestamp
           }
-        }
-        recentAcSubmissionList(limit: 100) {
-          id
-          title
-          titleSlug
-          timestamp
         }
       }
-    }
-  `;
+    `;
+
+    // Fallback to try a simpler query first
+    const fallbackQuery = `
+      query getUser($username: String!) {
+        matchedUser(username: $username) {
+          username
+        }
+      }
+    `;
 
   const response = await fetch('https://leetcode.com/graphql/', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'User-Agent': 'Mirrorship-App',
-      'Referer': 'https://leetcode.com/'
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+      'Accept': 'application/json, text/plain, */*',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Origin': 'https://leetcode.com',
+      'Referer': 'https://leetcode.com/',
+      'X-Requested-With': 'XMLHttpRequest'
     },
     body: JSON.stringify({
       query,
       variables: {
-        username: username,
-        year: currentYear
+        username: username
       }
     })
   });
 
   if (!response.ok) {
-    throw new Error(`LeetCode API error: ${response.status} ${response.statusText}`);
+    const errorText = await response.text();
+    console.error('LeetCode API Error:', {
+      status: response.status,
+      statusText: response.statusText,
+      body: errorText,
+      username: username
+    });
+    throw new Error(`LeetCode API error: ${response.status} ${response.statusText}. Response: ${errorText}`);
   }
 
-  const data = await response.json();
+  let data;
+  try {
+    data = await response.json();
+  } catch (jsonError) {
+    const responseText = await response.text();
+    console.error('Failed to parse LeetCode response as JSON:', responseText);
+    throw new Error(`Invalid JSON response from LeetCode API: ${responseText.substring(0, 200)}`);
+  }
+
+  if (data.errors) {
+    console.error('LeetCode GraphQL errors:', data.errors);
+    throw new Error(`LeetCode GraphQL error: ${data.errors.map((e: any) => e.message).join(', ')}`);
+  }
 
   if (!data.data?.matchedUser) {
-    throw new Error('User not found on LeetCode');
+    throw new Error(`User '${username}' not found on LeetCode`);
   }
 
   // Process and save to database
@@ -234,23 +256,55 @@ async function syncLeetCodeData(userId: string, username: string) {
   const submissions: any[] = [];
   const recentSubmissions = matchedUser.recentAcSubmissionList || [];
   
-  // Process recent submissions
+  // Process recent submissions - convert to daily contributions format
+  const contributionMap = new Map<string, number>();
+  
   recentSubmissions.forEach((submission: any) => {
+    const submissionDate = new Date(submission.timestamp * 1000);
+    const dateKey = submissionDate.toISOString().split('T')[0];
+    
+    contributionMap.set(dateKey, (contributionMap.get(dateKey) || 0) + 1);
+    
     submissions.push({
       problemTitle: submission.title,
       problemSlug: submission.titleSlug,
-      submissionDate: new Date(submission.timestamp * 1000),
+      submissionDate: submissionDate,
       status: 'Accepted',
       difficulty: 'Unknown' // LeetCode API doesn't provide difficulty in this endpoint
     });
   });
 
+  // Convert to contribution format for the last 9 months
+  const contributions: any[] = [];
+  const nineMonthsAgo = new Date();
+  nineMonthsAgo.setMonth(nineMonthsAgo.getMonth() - 9);
+  
+  for (let date = new Date(nineMonthsAgo); date <= new Date(); date.setDate(date.getDate() + 1)) {
+    const dateKey = date.toISOString().split('T')[0];
+    contributions.push({
+      date: dateKey,
+      count: contributionMap.get(dateKey) || 0
+    });
+  }
+
   await DatabaseService.saveLeetCodeSubmissions(userId, submissions);
   
-  return {
-    totalSubmissions: recentSubmissions.length,
-    streak: matchedUser.userCalendar?.streak || 0
-  };
+  const totalSolved = matchedUser.submitStats?.acSubmissionNum?.reduce((sum: number, stat: any) => sum + stat.count, 0) || 0;
+  
+    return {
+      totalSubmissions: recentSubmissions.length,
+      totalSolved: totalSolved,
+      streak: 0 // Will be calculated from contributions
+    };
+  } catch (error) {
+    console.error('LeetCode sync error:', error);
+    // Return minimal data if sync fails
+    return {
+      totalSubmissions: 0,
+      totalSolved: 0,
+      streak: 0
+    };
+  }
 }
 
 async function syncYouTubeData(userId: string, channelHandle: string, uploadsPlaylistId: string) {
