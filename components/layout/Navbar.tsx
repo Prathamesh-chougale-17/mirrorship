@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { useSession, signOut } from "@/lib/auth-client";
-import { User, Settings, LogOut, BookOpen, BarChart3, Home } from "lucide-react";
+import { User, Settings, LogOut, BookOpen, BarChart3, Home, StickyNote, Github } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -21,6 +22,36 @@ export function Navbar() {
   const { data: session, isPending } = useSession();
   const pathname = usePathname();
   const router = useRouter();
+  const [platformData, setPlatformData] = useState<{
+    githubUsername?: string;
+    leetcodeUsername?: string;
+    loading: boolean;
+  }>({ loading: true });
+
+  // Fetch platform usernames when user is logged in
+  useEffect(() => {
+    if (session?.user?.id) {
+      fetchPlatformData();
+    }
+  }, [session]);
+
+  const fetchPlatformData = async () => {
+    try {
+      const response = await fetch("/api/user/platform-settings");
+      const data = await response.json();
+      
+      if (response.ok) {
+        setPlatformData({
+          githubUsername: data.githubUsername,
+          leetcodeUsername: data.leetcodeUsername,
+          loading: false
+        });
+      }
+    } catch (error) {
+      console.error("Error fetching platform data:", error);
+      setPlatformData(prev => ({ ...prev, loading: false }));
+    }
+  };
 
   const handleSignOut = async () => {
     try {
@@ -41,7 +72,8 @@ export function Navbar() {
     { href: "/", label: "Home", icon: Home, public: true },
     { href: "/dashboard", label: "Dashboard", icon: BarChart3, public: false },
     { href: "/diary", label: "Diary", icon: BookOpen, public: false },
-    { href: "/sync", label: "Sync", icon: Settings, public: false },
+    { href: "/notes", label: "Notes", icon: StickyNote, public: false },
+    { href: "/profile", label: "Profile", icon: User, public: false },
   ];
 
   const isActive = (path: string) => pathname === path;
@@ -97,7 +129,7 @@ export function Navbar() {
                   </Avatar>
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuContent className="w-64" align="end" forceMount>
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
                     {session.user.name && (
@@ -107,6 +139,25 @@ export function Navbar() {
                       <p className="w-[200px] truncate text-sm text-muted-foreground">
                         {session.user.email}
                       </p>
+                    )}
+                    {/* Platform Usernames */}
+                    {!platformData.loading && (
+                      <div className="flex flex-col space-y-1 mt-2">
+                        {platformData.githubUsername && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Github className="h-3 w-3" />
+                            <span>@{platformData.githubUsername}</span>
+                          </div>
+                        )}
+                        {platformData.leetcodeUsername && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <div className="h-3 w-3 rounded-sm bg-orange-600 flex items-center justify-center">
+                              <span className="text-[8px] font-bold text-white">LC</span>
+                            </div>
+                            <span>@{platformData.leetcodeUsername}</span>
+                          </div>
+                        )}
+                      </div>
                     )}
                   </div>
                 </div>
@@ -127,6 +178,12 @@ export function Navbar() {
                   <Link href="/diary" className="flex items-center">
                     <BookOpen className="mr-2 h-4 w-4" />
                     <span>Diary</span>
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem asChild>
+                  <Link href="/notes" className="flex items-center">
+                    <StickyNote className="mr-2 h-4 w-4" />
+                    <span>Notes</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
