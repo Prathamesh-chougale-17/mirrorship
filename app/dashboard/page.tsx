@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Tooltip as ShadcnTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from "recharts";
 import { 
   BookOpen, 
@@ -365,29 +366,54 @@ export default function DashboardPage() {
                 {/* GitHub Contribution Heatmap */}
                 <div className="mt-4 -mx-2">
                   <div className="text-xs text-muted-foreground mb-2 px-2">Last 12 months of contributions</div>
-                  <ContributionGraph 
-                    data={contributionData.github.data} 
-                    blockSize={10}
-                    blockMargin={2}
-                    fontSize={11}
-                    className="text-xs"
-                  >
-                    <ContributionGraphCalendar hideMonthLabels>
+                  <TooltipProvider>
+                    <ContributionGraph 
+                      data={contributionData.github.data} 
+                      blockSize={10}
+                      blockMargin={2}
+                      fontSize={11}
+                      className="text-xs"
+                    >
+                    <ContributionGraphCalendar>
                       {({ activity, dayIndex, weekIndex }) => (
-                        <ContributionGraphBlock
-                          activity={activity}
-                          dayIndex={dayIndex}
-                          weekIndex={weekIndex}
-                          className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-green-200 data-[level='2']:fill-green-400 data-[level='3']:fill-green-600 data-[level='4']:fill-green-800 dark:data-[level='1']:fill-green-900 dark:data-[level='2']:fill-green-700 dark:data-[level='3']:fill-green-500 dark:data-[level='4']:fill-green-300"
-                          title={`${activity.count} contributions on ${activity.date}`}
-                        />
+                        <ShadcnTooltip key={`${weekIndex}-${dayIndex}`}>
+                          <TooltipTrigger asChild>
+                            <ContributionGraphBlock
+                              activity={activity}
+                              dayIndex={dayIndex}
+                              weekIndex={weekIndex}
+                              className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-green-200 data-[level='2']:fill-green-400 data-[level='3']:fill-green-600 data-[level='4']:fill-green-800 dark:data-[level='1']:fill-green-900 dark:data-[level='2']:fill-green-700 dark:data-[level='3']:fill-green-500 dark:data-[level='4']:fill-green-300"
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="text-center">
+                              <div className="font-semibold">
+                                {activity.count === 0 
+                                  ? 'No contributions'
+                                  : activity.count === 1
+                                  ? '1 contribution'
+                                  : `${activity.count} contributions`
+                                }
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(activity.date).toLocaleDateString('en-US', { 
+                                  weekday: 'long', 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                })}
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </ShadcnTooltip>
                       )}
                     </ContributionGraphCalendar>
-                    <ContributionGraphFooter className="text-xs px-2">
-                      <ContributionGraphTotalCount />
-                      <ContributionGraphLegend />
-                    </ContributionGraphFooter>
-                  </ContributionGraph>
+                      <ContributionGraphFooter className="text-xs px-2">
+                        <ContributionGraphTotalCount />
+                        <ContributionGraphLegend />
+                      </ContributionGraphFooter>
+                    </ContributionGraph>
+                  </TooltipProvider>
                 </div>
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex items-center justify-between">
@@ -524,33 +550,58 @@ export default function DashboardPage() {
                 {/* LeetCode Problem Solving Heatmap */}
                 <div className="mt-4 -mx-2">
                   <div className="text-xs text-muted-foreground mb-2 px-2">Problem solving activity</div>
-                  <ContributionGraph 
-                    data={contributionData.leetcode.data} 
-                    blockSize={10}
-                    blockMargin={2}
-                    fontSize={11}
-                    className="text-xs"
-                    labels={{
-                      totalCount: "{{count}} problems solved in {{year}}",
-                      legend: { less: "0", more: "8+" }
-                    }}
-                  >
-                    <ContributionGraphCalendar hideMonthLabels>
-                      {({ activity, dayIndex, weekIndex }) => (
-                        <ContributionGraphBlock
-                          activity={activity}
-                          dayIndex={dayIndex}
-                          weekIndex={weekIndex}
-                          className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-orange-200 data-[level='2']:fill-orange-400 data-[level='3']:fill-orange-600 data-[level='4']:fill-orange-800 dark:data-[level='1']:fill-orange-900 dark:data-[level='2']:fill-orange-700 dark:data-[level='3']:fill-orange-500 dark:data-[level='4']:fill-orange-300"
-                          title={`${activity.count} problems solved on ${activity.date}`}
-                        />
-                      )}
-                    </ContributionGraphCalendar>
-                    <ContributionGraphFooter className="text-xs px-2">
-                      <ContributionGraphTotalCount />
-                      <ContributionGraphLegend />
-                    </ContributionGraphFooter>
-                  </ContributionGraph>
+                  <TooltipProvider>
+                    <ContributionGraph 
+                      data={contributionData.leetcode.data} 
+                      blockSize={10}
+                      blockMargin={2}
+                      fontSize={11}
+                      className="text-xs"
+                      labels={{
+                        totalCount: "{{count}} problems solved in {{year}}",
+                        legend: { less: "0", more: "8+" }
+                      }}
+                    >
+                      <ContributionGraphCalendar>
+                        {({ activity, dayIndex, weekIndex }) => (
+                          <ShadcnTooltip key={`leetcode-${weekIndex}-${dayIndex}`}>
+                            <TooltipTrigger asChild>
+                              <ContributionGraphBlock
+                                activity={activity}
+                                dayIndex={dayIndex}
+                                weekIndex={weekIndex}
+                                className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-orange-200 data-[level='2']:fill-orange-400 data-[level='3']:fill-orange-600 data-[level='4']:fill-orange-800 dark:data-[level='1']:fill-orange-900 dark:data-[level='2']:fill-orange-700 dark:data-[level='3']:fill-orange-500 dark:data-[level='4']:fill-orange-300"
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="text-center">
+                                <div className="font-semibold">
+                                  {activity.count === 0 
+                                    ? 'No problems solved'
+                                    : activity.count === 1
+                                    ? '1 problem solved'
+                                    : `${activity.count} problems solved`
+                                  }
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(activity.date).toLocaleDateString('en-US', { 
+                                    weekday: 'long', 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })}
+                                </div>
+                              </div>
+                            </TooltipContent>
+                          </ShadcnTooltip>
+                        )}
+                      </ContributionGraphCalendar>
+                      <ContributionGraphFooter className="text-xs px-2">
+                        <ContributionGraphTotalCount />
+                        <ContributionGraphLegend />
+                      </ContributionGraphFooter>
+                    </ContributionGraph>
+                  </TooltipProvider>
                 </div>
                 
                 {/* Difficulty Breakdown */}
