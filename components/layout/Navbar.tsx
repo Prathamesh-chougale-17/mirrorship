@@ -11,6 +11,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { useSession, signOut } from "@/lib/auth-client";
 import { User, Settings, LogOut, BookOpen, BarChart3, Home } from "lucide-react";
 import { toast } from "sonner";
@@ -80,7 +81,8 @@ export function Navbar() {
         </div>
 
         {/* Auth Section */}
-        <div className="flex items-center space-x-4">
+        <div className="flex items-center space-x-2">
+          <AnimatedThemeToggler />
           {isPending ? (
             <div className="h-8 w-8 animate-pulse rounded-full bg-muted" />
           ) : session ? (
