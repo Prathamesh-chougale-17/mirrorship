@@ -231,17 +231,13 @@ export async function POST(request: NextRequest) {
     await DatabaseService.saveGitHubContributions(user.id, contributions);
 
     // Update user platform settings
-    await DatabaseService.saveUserPlatformSettings(user.id, {
+    await DatabaseService.updateUserPlatformSettings(user.id, {
       github: {
         username: githubUsername,
         accessToken: accessToken, // Note: Should be encrypted in production
         lastSyncDate: new Date(),
         syncEnabled: true
-      },
-      leetcode: {
-        syncEnabled: false
-      },
-      syncFrequency: 'manual'
+      }
     });
 
     return NextResponse.json({

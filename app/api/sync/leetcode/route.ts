@@ -189,16 +189,13 @@ export async function POST(request: NextRequest) {
     await DatabaseService.saveLeetCodeSubmissions(user.id, submissions);
 
     // Update user platform settings
-    const existingSettings = await DatabaseService.getUserPlatformSettings(user.id);
-    await DatabaseService.saveUserPlatformSettings(user.id, {
-      github: existingSettings?.github || { syncEnabled: false },
+    await DatabaseService.updateUserPlatformSettings(user.id, {
       leetcode: {
         username: leetcodeUsername,
         sessionCookie: sessionCookie, // Note: Should be encrypted in production
         lastSyncDate: new Date(),
         syncEnabled: true
-      },
-      syncFrequency: existingSettings?.syncFrequency || 'manual'
+      }
     });
 
     return NextResponse.json({
