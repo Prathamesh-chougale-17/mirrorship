@@ -8,6 +8,11 @@ import {
   CodingDashboard, 
   DashboardContent 
 } from "@/components/dashboard";
+import { 
+  DashboardHeaderSkeleton,
+  CodingDashboardSkeleton,
+  DashboardContentSkeleton
+} from "@/components/ui/dashboard-skeleton";
 import { type Activity as ContributionActivity } from "@/components/ui/kibo-ui/contribution-graph";
 
 interface DashboardData {
@@ -96,9 +101,10 @@ interface Motivation {
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dashboardLoading, setDashboardLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
-  const [contributionsLoading, setContributionsLoading] = useState(false);
+  const [contributionsLoading, setContributionsLoading] = useState(true);
   const [contributionData, setContributionData] = useState<ContributionData>({
     github: {
       data: [],
@@ -165,6 +171,7 @@ export default function DashboardPage() {
 
   const fetchDashboardData = async () => {
     try {
+      setDashboardLoading(true);
       const response = await fetch("/api/dashboard");
       const data = await response.json();
       
@@ -175,6 +182,8 @@ export default function DashboardPage() {
       setDashboardData(data);
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
+    } finally {
+      setDashboardLoading(false);
     }
   };
 
@@ -381,8 +390,10 @@ export default function DashboardPage() {
 
   if (isPending) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="container mx-auto px-4 py-6 space-y-6">
+        <DashboardHeaderSkeleton />
+        <CodingDashboardSkeleton />
+        <DashboardContentSkeleton />
       </div>
     );
   }
@@ -404,24 +415,30 @@ export default function DashboardPage() {
         userName={session.user.name}
         isSyncing={isSyncing}
         onSync={() => handleManualSync()}
+        isLoading={dashboardLoading}
       />
 
-      <CodingDashboard 
-        platformSettings={platformSettings}
-        contributionsLoading={contributionsLoading}
-        contributionData={contributionData}
-        lastSyncTime={lastSyncTime}
-        isSyncing={isSyncing}
-        getLeetCodeMotivation={getLeetCodeMotivation}
-        getTodaysLeetCodeActivity={getTodaysLeetCodeActivity}
-        onManualSync={(platforms) => handleManualSync(platforms)}
-        stats={dashboardData?.stats}
-        kanbanSummary={dashboardData?.kanbanSummary}
-      />
+      {contributionsLoading || platformSettings.isLoading ? (
+        <CodingDashboardSkeleton />
+      ) : (
+        <CodingDashboard 
+          platformSettings={platformSettings}
+          contributionsLoading={contributionsLoading}
+          contributionData={contributionData}
+          lastSyncTime={lastSyncTime}
+          isSyncing={isSyncing}
+          getLeetCodeMotivation={getLeetCodeMotivation}
+          getTodaysLeetCodeActivity={getTodaysLeetCodeActivity}
+          onManualSync={(platforms) => handleManualSync(platforms)}
+          stats={dashboardData?.stats}
+          kanbanSummary={dashboardData?.kanbanSummary}
+        />
+      )}
 
       <DashboardContent 
         dashboardData={dashboardData} 
         moodEmojis={moodEmojis}
+        isLoading={dashboardLoading}
       />
     </div>
   );

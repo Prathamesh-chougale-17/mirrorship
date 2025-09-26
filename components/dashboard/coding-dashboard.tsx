@@ -3,6 +3,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip as ShadcnTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
   Brain, 
@@ -145,8 +146,85 @@ export function CodingDashboard({
             </div>
           </div>
         ) : contributionsLoading ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          <div className="space-y-6">
+            {/* Stats Row Skeleton */}
+            <div className="grid grid-cols-5 gap-3 mb-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Card key={i} className="p-3">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-7 w-7 rounded-full" />
+                    <div className="flex-1">
+                      <Skeleton className="h-4 w-8 mb-1" />
+                      <Skeleton className="h-3 w-16" />
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+            
+            {/* Sync Status */}
+            <div className="text-center">
+              <Skeleton className="h-3 w-40 mx-auto" />
+            </div>
+            
+            {/* Heatmaps Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i}>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Skeleton className="h-4 w-4" />
+                      <Skeleton className="h-4 w-32" />
+                    </div>
+                    <Skeleton className="h-3 w-20" />
+                  </div>
+                  <div className="space-y-2">
+                    <div className="flex gap-1">
+                      <Skeleton className="h-3 w-6" />
+                      <div className="flex-1 grid grid-cols-53 gap-1">
+                        {Array.from({ length: 53 }).map((_, j) => (
+                          <Skeleton key={j} className="h-3 w-3" />
+                        ))}
+                      </div>
+                    </div>
+                    {Array.from({ length: 7 }).map((_, dayIndex) => (
+                      <div key={dayIndex} className="flex gap-1">
+                        <Skeleton className="h-3 w-6" />
+                        <div className="flex-1 grid grid-cols-53 gap-1">
+                          {Array.from({ length: 53 }).map((_, weekIndex) => (
+                            <Skeleton key={weekIndex} className="h-3 w-3" />
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <Skeleton className="h-3 w-16" />
+                    <div className="flex items-center gap-1">
+                      <Skeleton className="h-3 w-12" />
+                      {Array.from({ length: 5 }).map((_, k) => (
+                        <Skeleton key={k} className="h-3 w-3" />
+                      ))}
+                      <Skeleton className="h-3 w-8" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            {/* Motivation Section Skeleton */}
+            <Card className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex-1">
+                  <Skeleton className="h-5 w-80 mb-2" />
+                  <Skeleton className="h-4 w-96" />
+                </div>
+                <div className="flex items-center gap-2 ml-4">
+                  <Skeleton className="h-6 w-20" />
+                  <Skeleton className="h-8 w-24" />
+                </div>
+              </div>
+            </Card>
           </div>
         ) : (
           <div className="space-y-6">

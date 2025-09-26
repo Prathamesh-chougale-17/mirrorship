@@ -2,6 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Clock, BookOpen, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
@@ -17,9 +18,10 @@ interface RecentEntry {
 interface RecentEntriesProps {
   entries?: RecentEntry[];
   moodEmojis: { [key: number]: string };
+  isLoading?: boolean;
 }
 
-export function RecentEntries({ entries, moodEmojis }: RecentEntriesProps) {
+export function RecentEntries({ entries, moodEmojis, isLoading = false }: RecentEntriesProps) {
   return (
     <Card>
       <CardHeader className="pb-3">
@@ -36,7 +38,19 @@ export function RecentEntries({ entries, moodEmojis }: RecentEntriesProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {entries?.length === 0 ? (
+        {isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex-1">
+                  <Skeleton className="h-5 w-48 mb-1" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <Skeleton className="h-6 w-6" />
+              </div>
+            ))}
+          </div>
+        ) : entries?.length === 0 ? (
           <div className="text-center py-6 text-muted-foreground">
             <BookOpen className="h-8 w-8 mx-auto mb-2 opacity-50" />
             <p className="text-sm mb-3">No diary entries yet</p>

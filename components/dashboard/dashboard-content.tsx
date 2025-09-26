@@ -31,9 +31,10 @@ interface DashboardData {
 interface DashboardContentProps {
   dashboardData: DashboardData | null;
   moodEmojis: { [key: number]: string };
+  isLoading?: boolean;
 }
 
-export function DashboardContent({ dashboardData, moodEmojis }: DashboardContentProps) {
+export function DashboardContent({ dashboardData, moodEmojis, isLoading = false }: DashboardContentProps) {
   return (
     <div className="space-y-6">
       {/* Beautiful Full-Width Layout */}
@@ -42,7 +43,7 @@ export function DashboardContent({ dashboardData, moodEmojis }: DashboardContent
         <div className="mb-8">
           <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-xl p-1">
             <div className="bg-background rounded-lg shadow-sm border">
-              <TrendsChart trends={dashboardData?.trends} />
+              <TrendsChart trends={dashboardData?.trends} isLoading={isLoading} />
             </div>
           </div>
         </div>
@@ -54,6 +55,7 @@ export function DashboardContent({ dashboardData, moodEmojis }: DashboardContent
               <RecentEntries 
                 entries={dashboardData?.recentEntries} 
                 moodEmojis={moodEmojis}
+                isLoading={isLoading}
               />
             </div>
           </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
@@ -8,9 +9,25 @@ interface DashboardHeaderProps {
   userName?: string;
   isSyncing: boolean;
   onSync: () => void;
+  isLoading?: boolean;
 }
 
-export function DashboardHeader({ userName, isSyncing, onSync }: DashboardHeaderProps) {
+export function DashboardHeader({ userName, isSyncing, onSync, isLoading = false }: DashboardHeaderProps) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-between">
+        <div>
+          <Skeleton className="h-8 w-48 mb-2" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <div className="flex gap-2">
+          <Skeleton className="h-8 w-10" />
+          <Skeleton className="h-8 w-24" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between">
       <div>
