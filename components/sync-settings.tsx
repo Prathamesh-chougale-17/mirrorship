@@ -23,6 +23,28 @@ export default function SyncSettings() {
     { platform: 'leetcode', status: 'idle' }
   ]);
 
+  // Load existing platform settings on component mount
+  useEffect(() => {
+    const loadPlatformSettings = async () => {
+      try {
+        const response = await fetch('/api/user/platform-settings');
+        if (response.ok) {
+          const data = await response.json();
+          if (data.githubUsername) {
+            setGithubUsername(data.githubUsername);
+          }
+          if (data.leetcodeUsername) {
+            setLeetcodeUsername(data.leetcodeUsername);
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load platform settings:', error);
+      }
+    };
+
+    loadPlatformSettings();
+  }, []);
+
   const updateSyncStatus = (platform: 'github' | 'leetcode', updates: Partial<SyncStatus>) => {
     setSyncStatus(prev => prev.map(status => 
       status.platform === platform 
@@ -40,15 +62,34 @@ export default function SyncSettings() {
       return;
     }
 
+    if (!githubToken) {
+      updateSyncStatus('github', { 
+        status: 'error', 
+        message: 'Personal Access Token is required for your own GitHub data' 
+      });
+      return;
+    }
+
     updateSyncStatus('github', { status: 'syncing', message: 'Fetching contributions...' });
 
     try {
+      // First, save the GitHub username to user settings
+      await fetch('/api/user/platform-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          githubUsername,
+          hasGitHub: true
+        })
+      });
+
+      // Then sync the data
       const response = await fetch('/api/sync/github', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           githubUsername,
-          accessToken: githubToken || undefined,
+          accessToken: githubToken,
           dateRange: {
             from: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString(),
             to: new Date().toISOString()
@@ -61,7 +102,7 @@ export default function SyncSettings() {
       if (response.ok) {
         updateSyncStatus('github', {
           status: 'success',
-          message: `Synced ${data.contributionsCount} contributions`,
+          message: `Synced ${data.contributionsCount} contributions. Username saved to profile!`,
           lastSync: new Date().toISOString()
         });
       } else {
@@ -90,6 +131,17 @@ export default function SyncSettings() {
     updateSyncStatus('leetcode', { status: 'syncing', message: 'Fetching submissions...' });
 
     try {
+      // First, save the LeetCode username to user settings
+      await fetch('/api/user/platform-settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leetcodeUsername,
+          hasLeetCode: true
+        })
+      });
+
+      // Then sync the data
       const response = await fetch('/api/sync/leetcode', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -107,7 +159,7 @@ export default function SyncSettings() {
       if (response.ok) {
         updateSyncStatus('leetcode', {
           status: 'success',
-          message: `Synced ${data.submissionsCount} submissions`,
+          message: `Synced ${data.submissionsCount} submissions. Username saved to profile!`,
           lastSync: new Date().toISOString()
         });
       } else {
@@ -184,7 +236,7 @@ export default function SyncSettings() {
             </div>
             <div>
               <label htmlFor="github-token" className="text-sm font-medium">
-                Personal Access Token (Required for real data)
+                Personal Access Token (Required - Must be YOUR token for YOUR GitHub account)
               </label>
               <Input
                 id="github-token"
@@ -193,17 +245,26 @@ export default function SyncSettings() {
                 value={githubToken}
                 onChange={(e) => setGithubToken(e.target.value)}
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                Get your token from{' '}
-                <a 
-                  href="https://github.com/settings/tokens" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-blue-500 hover:underline"
-                >
-                  GitHub Settings → Developer settings → Personal access tokens
-                </a>
-              </p>
+              <div className="text-xs text-muted-foreground mt-1 space-y-1">
+                <p>
+                  Get your token from{' '}
+                  <a 
+                    href="https://github.com/settings/tokens" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline"
+                  >
+                    GitHub Settings → Developer settings → Personal access tokens
+                  </a>
+                </p>
+                <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded p-2 mt-2">
+                  <p className="text-yellow-800 dark:text-yellow-200 font-medium">⚠️ Security Notice:</p>
+                  <p className="text-yellow-700 dark:text-yellow-300">
+                    Each user must use their own Personal Access Token. You cannot use someone else's token 
+                    to fetch their GitHub data due to GitHub's security policies.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
           
