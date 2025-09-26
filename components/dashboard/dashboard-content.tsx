@@ -2,7 +2,6 @@
 
 import { TrendsChart } from "./trends-chart";
 import { RecentEntries } from "./recent-entries";
-import { TaskProgress } from "./task-progress";
 
 interface DashboardData {
   stats: {
@@ -22,12 +21,7 @@ interface DashboardData {
     aiSummary?: string;
   }>;
 
-  kanbanSummary: {
-    todo: number;
-    'in-progress': number;
-    done: number;
-    total: number;
-  };
+
   trends: {
     mood: Array<{ date: string; mood: number }>;
     wordCount: Array<{ date: string; words: number }>;
@@ -41,19 +35,29 @@ interface DashboardContentProps {
 
 export function DashboardContent({ dashboardData, moodEmojis }: DashboardContentProps) {
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-      {/* Recent Entries & Trends - Takes 3 columns on large screens */}
-      <div className="lg:col-span-3 space-y-6">
-        <TrendsChart trends={dashboardData?.trends} />
-        <RecentEntries 
-          entries={dashboardData?.recentEntries} 
-          moodEmojis={moodEmojis}
-        />
-      </div>
-
-      {/* Compact Sidebar - Takes 1 column */}
-      <div className="space-y-4">
-        <TaskProgress kanbanSummary={dashboardData?.kanbanSummary} />
+    <div className="space-y-6">
+      {/* Beautiful Full-Width Layout */}
+      <div className="w-full max-w-none">
+        {/* Trends Chart - Prominent and Beautiful */}
+        <div className="mb-8">
+          <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-xl p-1">
+            <div className="bg-background rounded-lg shadow-sm border">
+              <TrendsChart trends={dashboardData?.trends} />
+            </div>
+          </div>
+        </div>
+        
+        {/* Recent Entries - Enhanced Full Width */}
+        <div className="w-full">
+          <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 rounded-xl p-1">
+            <div className="bg-background rounded-lg shadow-sm border">
+              <RecentEntries 
+                entries={dashboardData?.recentEntries} 
+                moodEmojis={moodEmojis}
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

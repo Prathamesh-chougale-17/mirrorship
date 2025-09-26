@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { AppDock } from "@/components/app-dock";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
@@ -33,10 +34,11 @@ export default function RootLayout({
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
           <Navbar />
-          <main className="flex-1">
+          <main className="flex-1 pb-20">
             {children}
           </main>
           <Footer />
+          <AppDock />
         </ThemeProvider>
         <Toaster />
       </body>

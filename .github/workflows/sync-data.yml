@@ -25,11 +25,8 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          cache: 'npm'
+      # No need to setup Node.js or install dependencies 
+      # since we're just making HTTP calls to the API
 
       - name: Setup environment
         env:
