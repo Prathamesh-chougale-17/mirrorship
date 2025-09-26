@@ -254,13 +254,13 @@ async function syncLeetCodeData(userId: string, username: string) {
 }
 
 async function syncYouTubeData(userId: string, channelHandle: string, uploadsPlaylistId: string) {
-  // Get uploads for the last 12 months
-  const oneYearAgo = new Date();
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  // Get uploads for the last 9 months
+  const nineMonthsAgo = new Date();
+  nineMonthsAgo.setMonth(nineMonthsAgo.getMonth() - 9);
   
   const uploads = await YouTubeService.getUploadsInDateRange(
     uploadsPlaylistId,
-    oneYearAgo,
+    nineMonthsAgo,
     new Date()
   );
 
@@ -274,7 +274,7 @@ async function syncYouTubeData(userId: string, channelHandle: string, uploadsPla
   return {
     totalUploads: transformedUploads.length,
     dateRange: {
-      from: oneYearAgo.toISOString().split('T')[0],
+      from: nineMonthsAgo.toISOString().split('T')[0],
       to: new Date().toISOString().split('T')[0]
     }
   };

@@ -54,13 +54,13 @@ export async function POST(request: NextRequest) {
     const transformedChannelData = YouTubeService.transformChannelData(channelData, channelHandle);
     await DatabaseService.saveYouTubeChannel(user.id, transformedChannelData);
 
-    // Step 3: Get uploads for the last 12 months
-    const oneYearAgo = new Date();
-    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    // Step 3: Get uploads for the last 9 months
+    const nineMonthsAgo = new Date();
+    nineMonthsAgo.setMonth(nineMonthsAgo.getMonth() - 9);
     
     const uploads = await YouTubeService.getUploadsInDateRange(
       transformedChannelData.uploadsPlaylistId,
-      oneYearAgo,
+      nineMonthsAgo,
       new Date()
     );
 
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       },
       uploadCount: transformedUploads.length,
       dateRange: {
-        from: oneYearAgo.toISOString().split('T')[0],
+        from: nineMonthsAgo.toISOString().split('T')[0],
         to: new Date().toISOString().split('T')[0]
       }
     });

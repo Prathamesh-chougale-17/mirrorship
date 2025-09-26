@@ -29,6 +29,7 @@ import Link from "next/link";
 interface PlatformSettings {
   hasGitHub: boolean;
   hasLeetCode: boolean;
+  hasYouTube: boolean;
   isLoading: boolean;
 }
 
@@ -50,6 +51,14 @@ interface ContributionData {
   };
   leetcode: {
     stats: ContributionStats;
+    data: ContributionActivity[];
+  };
+  youtube: {
+    stats: ContributionStats & {
+      totalUploads: number;
+      totalViews: number;
+      avgViewsPerVideo: number;
+    };
     data: ContributionActivity[];
   };
 }
@@ -113,17 +122,18 @@ export function CodingDashboard({
 
   const filteredGithubData = filterLast9Months(contributionData.github.data);
   const filteredLeetcodeData = filterLast9Months(contributionData.leetcode.data);
+  const filteredYoutubeData = filterLast9Months(contributionData.youtube.data);
   return (
     <Card className="overflow-hidden p-0">
       <CardContent className="p-4 md:p-6">
-        {(!platformSettings.hasGitHub && !platformSettings.hasLeetCode) ? (
+        {(!platformSettings.hasGitHub && !platformSettings.hasLeetCode && !platformSettings.hasYouTube) ? (
           <div className="text-center py-8">
             <div className="mb-4">
               <div className="w-16 h-16 bg-gradient-to-br from-purple-500/20 to-blue-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Code className="w-8 h-8 text-purple-600" />
               </div>
               <h3 className="font-semibold text-lg mb-2">Connect Your Platforms</h3>
-              <p className="text-sm text-muted-foreground mb-6">Link GitHub and LeetCode to track your coding progress</p>
+              <p className="text-sm text-muted-foreground mb-6">Link GitHub, LeetCode, and YouTube to track your coding progress</p>
             </div>
             <div className="flex gap-3 justify-center">
               <Button asChild size="sm">
@@ -207,6 +217,21 @@ export function CodingDashboard({
                       {platformSettings.hasLeetCode ? contributionData.leetcode.stats.solveStreak : 0}
                     </div>
                     <div className="text-[10px] text-muted-foreground mt-0.5 leading-none">LeetCode Streak</div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* YouTube Streak */}
+              <Card className="p-3 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:block p-1.5 bg-red-500/10 rounded-full">
+                    <BookOpen className="h-3.5 w-3.5 text-red-500" />
+                  </div>
+                  <div className="flex-1 min-w-0 sm:text-left text-center">
+                    <div className="text-sm font-bold leading-none">
+                      {platformSettings.hasYouTube ? contributionData.youtube.stats.currentStreak : 0}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-none">YouTube Streak</div>
                   </div>
                 </div>
               </Card>
@@ -305,6 +330,57 @@ export function CodingDashboard({
                               <div className="text-center">
                                 <div className="font-semibold">
                                   {activity.count === 0 ? 'No problems solved' : `${activity.count} problems solved`}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {new Date(activity.date).toLocaleDateString()}
+                                </div>
+                              </div>
+                            </TooltipContent>
+                          </ShadcnTooltip>
+                        )}
+                      </ContributionGraphCalendar>
+                      <ContributionGraphFooter className="text-xs">
+                        <ContributionGraphLegend />
+                      </ContributionGraphFooter>
+                    </ContributionGraph>
+                  </TooltipProvider>
+                </div>
+              )}
+
+              {platformSettings.hasYouTube && (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium flex items-center gap-2">
+                      <BookOpen className="w-4 h-4 text-red-600" />
+                      YouTube Uploads
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {contributionData.youtube.stats.totalUploads} videos
+                    </span>
+                  </div>
+                  <TooltipProvider>
+                    <ContributionGraph 
+                      data={filteredYoutubeData} 
+                      blockSize={14}
+                      blockMargin={3}
+                      fontSize={12}
+                      className="text-xs"
+                    >
+                      <ContributionGraphCalendar>
+                        {({ activity, dayIndex, weekIndex }) => (
+                          <ShadcnTooltip key={`youtube-${weekIndex}-${dayIndex}`}>
+                            <TooltipTrigger asChild>
+                              <ContributionGraphBlock
+                                activity={activity}
+                                dayIndex={dayIndex}
+                                weekIndex={weekIndex}
+                                className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='0']:fill-muted data-[level='1']:fill-red-200 data-[level='2']:fill-red-400 data-[level='3']:fill-red-600 data-[level='4']:fill-red-800"
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="text-center">
+                                <div className="font-semibold">
+                                  {activity.count === 0 ? 'No uploads' : `${activity.count} uploads`}
                                 </div>
                                 <div className="text-xs text-muted-foreground">
                                   {new Date(activity.date).toLocaleDateString()}
