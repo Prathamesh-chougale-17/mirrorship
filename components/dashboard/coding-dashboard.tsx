@@ -228,6 +228,44 @@ export function CodingDashboard({
           </div>
         ) : (
           <div className="space-y-6">
+
+            {/* LeetCode Motivation Section */}
+            {platformSettings.hasLeetCode && (() => {
+              const motivation = getLeetCodeMotivation();
+              const urgency = (motivation.urgency ?? 'medium') as 'critical' | 'high' | 'medium' | 'low' | 'success';
+              
+              const urgencyStyles = {
+                critical: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', text: 'text-red-900 dark:text-red-100' },
+                high: { bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-200 dark:border-orange-800', text: 'text-orange-900 dark:text-orange-100' },
+                medium: { bg: 'bg-yellow-50 dark:bg-yellow-950/30', border: 'border-yellow-200 dark:border-yellow-800', text: 'text-yellow-900 dark:text-yellow-100' },
+                low: { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800', text: 'text-blue-900 dark:text-blue-100' },
+                success: { bg: 'bg-green-50 dark:bg-green-950/30', border: 'border-green-200 dark:border-green-800', text: 'text-green-900 dark:text-green-100' }
+              };
+              
+              const style = urgencyStyles[urgency];
+              
+              return (
+                <div className={`p-4 rounded-lg border ${style.bg} ${style.border}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1">
+                      <div className={`font-semibold text-sm ${style.text}`}>{motivation.message}</div>
+                      <div className={`text-xs ${style.text} opacity-80`}>{motivation.description}</div>
+                    </div>
+                    <div className="flex items-center gap-2 ml-4">
+                      {motivation.urgency === 'critical' && (
+                        <Badge variant="destructive" className="text-xs px-2 py-1">OUT OF AIM!</Badge>
+                      )}
+                      <Button size="sm" asChild className="text-xs">
+                        <a href="https://takeuforward.org/strivers-a2z-dsa-course/strivers-a2z-dsa-course-sheet-2/" target="_blank">
+                          {motivation.action}
+                          <ExternalLink className="h-3 w-3 ml-1" />
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
             {/* Ultra Compact Stats - 5 Cards in Single Row */}
             <div className="grid grid-cols-5 gap-3 mb-4">
               {/* Writing Streak */}
@@ -476,44 +514,6 @@ export function CodingDashboard({
                 </div>
               )}
             </div>
-
-            {/* LeetCode Motivation Section */}
-            {platformSettings.hasLeetCode && (() => {
-              const motivation = getLeetCodeMotivation();
-              const urgency = (motivation.urgency ?? 'medium') as 'critical' | 'high' | 'medium' | 'low' | 'success';
-              
-              const urgencyStyles = {
-                critical: { bg: 'bg-red-50 dark:bg-red-950/30', border: 'border-red-200 dark:border-red-800', text: 'text-red-900 dark:text-red-100' },
-                high: { bg: 'bg-orange-50 dark:bg-orange-950/30', border: 'border-orange-200 dark:border-orange-800', text: 'text-orange-900 dark:text-orange-100' },
-                medium: { bg: 'bg-yellow-50 dark:bg-yellow-950/30', border: 'border-yellow-200 dark:border-yellow-800', text: 'text-yellow-900 dark:text-yellow-100' },
-                low: { bg: 'bg-blue-50 dark:bg-blue-950/30', border: 'border-blue-200 dark:border-blue-800', text: 'text-blue-900 dark:text-blue-100' },
-                success: { bg: 'bg-green-50 dark:bg-green-950/30', border: 'border-green-200 dark:border-green-800', text: 'text-green-900 dark:text-green-100' }
-              };
-              
-              const style = urgencyStyles[urgency];
-              
-              return (
-                <div className={`p-4 rounded-lg border ${style.bg} ${style.border}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className={`font-semibold text-sm ${style.text}`}>{motivation.message}</div>
-                      <div className={`text-xs ${style.text} opacity-80`}>{motivation.description}</div>
-                    </div>
-                    <div className="flex items-center gap-2 ml-4">
-                      {motivation.urgency === 'critical' && (
-                        <Badge variant="destructive" className="text-xs px-2 py-1">OUT OF AIM!</Badge>
-                      )}
-                      <Button size="sm" asChild className="text-xs">
-                        <a href="https://takeuforward.org/strivers-a2z-dsa-course/strivers-a2z-dsa-course-sheet-2/" target="_blank">
-                          {motivation.action}
-                          <ExternalLink className="h-3 w-3 ml-1" />
-                        </a>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
 
           </div>
         )}
