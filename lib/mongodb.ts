@@ -45,7 +45,9 @@ import {
   UserPreferences,
   GitHubContribution,
   LeetCodeSubmission,
-  UserPlatformSettings
+  UserPlatformSettings,
+  YouTubeUpload,
+  YouTubeChannel
 } from './models';
 import { ObjectId } from 'mongodb';
 
@@ -182,6 +184,31 @@ export class DatabaseService {
     );
   }
 
+  static async updateUserPlatformSettings(
+    userId: string,
+    partialSettings: Partial<Omit<UserPlatformSettings, '_id' | 'userId' | 'createdAt' | 'updatedAt'>>
+  ): Promise<void> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<UserPlatformSettings>(COLLECTIONS.USER_PLATFORM_SETTINGS);
+    
+    const timestamp = new Date();
+    await collection.updateOne(
+      { userId },
+      {
+        $set: {
+          ...partialSettings,
+          updatedAt: timestamp
+        },
+        $setOnInsert: {
+          userId,
+          createdAt: timestamp
+        }
+      },
+      { upsert: true }
+    );
+  }
+
   // Contribution Analytics
   static async getContributionSummary(userId: string, days: number = 365): Promise<{
     github: { totalCommits: number; streak: number; activeDays: number };
@@ -249,6 +276,116 @@ export class DatabaseService {
     ]).toArray();
     
     return users;
+  }
+
+  // YouTube Channel
+  static async saveYouTubeChannel(
+    userId: string,
+    channelData: Omit<YouTubeChannel, '_id' | 'userId' | 'createdAt' | 'updatedAt'>
+  ): Promise<void> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<YouTubeChannel>(COLLECTIONS.YOUTUBE_CHANNELS);
+    
+    const timestamp = new Date();
+    await collection.replaceOne(
+      { userId },
+      {
+        ...channelData,
+        userId,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      },
+      { upsert: true }
+    );
+  }
+
+  static async getYouTubeChannel(userId: string): Promise<YouTubeChannel | null> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<YouTubeChannel>(COLLECTIONS.YOUTUBE_CHANNELS);
+    
+    return await collection.findOne({ userId });
+  }
+
+  // YouTube Uploads
+  static async saveYouTubeUploads(
+    userId: string,
+    uploads: Omit<YouTubeUpload, '_id' | 'userId' | 'createdAt' | 'updatedAt'>[]
+  ): Promise<void> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<YouTubeUpload>(COLLECTIONS.YOUTUBE_UPLOADS);
+    
+    const timestamp = new Date();
+    const uploadsWithMetadata = uploads.map(upload => ({
+      ...upload,
+      userId,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    }));
+
+    // Delete existing uploads for this user and date range
+    if (uploads.length > 0) {
+      const videoIds = uploads.map(u => u.videoId);
+      await collection.deleteMany({
+        userId,
+        videoId: { $in: videoIds }
+      });
+    }
+
+    if (uploadsWithMetadata.length > 0) {
+      await collection.insertMany(uploadsWithMetadata);
+    }
+  }
+
+  static async getYouTubeUploads(
+    userId: string,
+    startDate?: Date,
+    endDate?: Date
+  ): Promise<YouTubeUpload[]> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<YouTubeUpload>(COLLECTIONS.YOUTUBE_UPLOADS);
+    
+    const filter: any = { userId };
+    if (startDate || endDate) {
+      filter.publishedAt = {};
+      if (startDate) filter.publishedAt.$gte = startDate;
+      if (endDate) filter.publishedAt.$lte = endDate;
+    }
+    
+    return await collection
+      .find(filter)
+      .sort({ publishedAt: -1 })
+      .toArray();
+  }
+
+  static async getYouTubeStats(userId: string): Promise<any> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<YouTubeUpload>(COLLECTIONS.YOUTUBE_UPLOADS);
+    
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const [totalUploads, recentUploads, totalViews] = await Promise.all([
+      collection.countDocuments({ userId }),
+      collection.countDocuments({
+        userId,
+        publishedAt: { $gte: thirtyDaysAgo }
+      }),
+      collection.aggregate([
+        { $match: { userId } },
+        { $group: { _id: null, totalViews: { $sum: "$viewCount" } } }
+      ]).toArray()
+    ]);
+    
+    return {
+      totalUploads,
+      recentUploads,
+      totalViews: totalViews[0]?.totalViews || 0
+    };
   }
 
   private static calculateStreak(activities: { date: Date; active: boolean }[]): number {

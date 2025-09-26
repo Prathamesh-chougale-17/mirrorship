@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { DatabaseService } from "@/lib/mongodb";
+import { YouTubeService } from "@/lib/youtube";
 
 async function getAuthUser(req: NextRequest) {
   try {
@@ -252,6 +253,33 @@ async function syncLeetCodeData(userId: string, username: string) {
   };
 }
 
+async function syncYouTubeData(userId: string, channelHandle: string, uploadsPlaylistId: string) {
+  // Get uploads for the last 12 months
+  const oneYearAgo = new Date();
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  
+  const uploads = await YouTubeService.getUploadsInDateRange(
+    uploadsPlaylistId,
+    oneYearAgo,
+    new Date()
+  );
+
+  // Transform and save upload data
+  const transformedUploads = uploads.map(upload => 
+    YouTubeService.transformUploadData(upload)
+  );
+  
+  await DatabaseService.saveYouTubeUploads(userId, transformedUploads);
+  
+  return {
+    totalUploads: transformedUploads.length,
+    dateRange: {
+      from: oneYearAgo.toISOString().split('T')[0],
+      to: new Date().toISOString().split('T')[0]
+    }
+  };
+}
+
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser(request);
@@ -279,6 +307,7 @@ export async function POST(request: NextRequest) {
     const results = {
       github: null as any,
       leetcode: null as any,
+      youtube: null as any,
       errors: [] as string[]
     };
 
@@ -317,8 +346,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Sync YouTube if requested and configured
+    if ((!platforms || platforms.includes('youtube')) && platformSettings.youtube?.syncEnabled) {
+      try {
+        if (!platformSettings.youtube.channelHandle || !platformSettings.youtube.uploadsPlaylistId) {
+          throw new Error('YouTube channel not properly configured');
+        }
+        
+        results.youtube = await syncYouTubeData(
+          user.id,
+          platformSettings.youtube.channelHandle,
+          platformSettings.youtube.uploadsPlaylistId
+        );
+      } catch (error: any) {
+        console.error('YouTube sync error:', error);
+        results.errors.push(`YouTube sync failed: ${error.message}`);
+      }
+    }
+
     // Check if any sync was successful
-    const hasSuccess = results.github || results.leetcode;
+    const hasSuccess = results.github || results.leetcode || results.youtube;
     
     if (!hasSuccess && results.errors.length > 0) {
       return NextResponse.json(

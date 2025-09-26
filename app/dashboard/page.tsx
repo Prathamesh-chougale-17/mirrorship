@@ -69,11 +69,20 @@ interface ContributionData {
     data: ContributionActivity[];
     stats: ContributionStats;
   };
+  youtube: {
+    data: ContributionActivity[];
+    stats: ContributionStats & {
+      totalUploads: number;
+      totalViews: number;
+      avgViewsPerVideo: number;
+    };
+  };
 }
 
 interface PlatformSettings {
   hasGitHub: boolean;
   hasLeetCode: boolean;
+  hasYouTube: boolean;
   isLoading: boolean;
 }
 
@@ -118,11 +127,29 @@ export default function DashboardPage() {
         medium: 0,
         hard: 0
       }
+    },
+    youtube: {
+      data: [],
+      stats: {
+        currentStreak: 0,
+        totalContributions: 0,
+        thisWeek: 0,
+        bestStreak: 0,
+        totalSolved: 0,
+        solveStreak: 0,
+        easy: 0,
+        medium: 0,
+        hard: 0,
+        totalUploads: 0,
+        totalViews: 0,
+        avgViewsPerVideo: 0
+      }
     }
   });
   const [platformSettings, setPlatformSettings] = useState<PlatformSettings>({
     hasGitHub: false,
     hasLeetCode: false,
+    hasYouTube: false,
     isLoading: true
   });
 
@@ -163,6 +190,7 @@ export default function DashboardPage() {
       setPlatformSettings({
         hasGitHub: data.hasGitHub,
         hasLeetCode: data.hasLeetCode,
+        hasYouTube: data.hasYouTube,
         isLoading: false
       });
     } catch (error) {
@@ -214,6 +242,23 @@ export default function DashboardPage() {
             medium: 0,
             hard: 0
           }
+        },
+        youtube: {
+          data: data.youtube?.data || [],
+          stats: data.youtube?.stats || {
+            currentStreak: 0,
+            totalContributions: 0,
+            thisWeek: 0,
+            bestStreak: 0,
+            totalSolved: 0,
+            solveStreak: 0,
+            easy: 0,
+            medium: 0,
+            hard: 0,
+            totalUploads: 0,
+            totalViews: 0,
+            avgViewsPerVideo: 0
+          }
         }
       });
     } catch (error) {
@@ -223,7 +268,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleManualSync = async (platforms = ["github", "leetcode"]) => {
+  const handleManualSync = async (platforms = ["github", "leetcode", "youtube"]) => {
     try {
       setIsSyncing(true);
       const response = await fetch("/api/sync/manual", {

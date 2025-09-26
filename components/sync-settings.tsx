@@ -5,10 +5,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Github, Code, Loader2, CheckCircle, XCircle } from 'lucide-react';
+import { Github, Code, Loader2, CheckCircle, XCircle, Youtube } from 'lucide-react';
 
 interface SyncStatus {
-  platform: 'github' | 'leetcode';
+  platform: 'github' | 'leetcode' | 'youtube';
   status: 'idle' | 'syncing' | 'success' | 'error';
   message?: string;
   lastSync?: string;
@@ -18,9 +18,11 @@ export default function SyncSettings() {
   const [githubUsername, setGithubUsername] = useState('');
   const [githubToken, setGithubToken] = useState('');
   const [leetcodeUsername, setLeetcodeUsername] = useState('');
+  const [youtubeHandle, setYoutubeHandle] = useState('');
   const [syncStatus, setSyncStatus] = useState<SyncStatus[]>([
     { platform: 'github', status: 'idle' },
-    { platform: 'leetcode', status: 'idle' }
+    { platform: 'leetcode', status: 'idle' },
+    { platform: 'youtube', status: 'idle' }
   ]);
 
   // Load existing platform settings on component mount
@@ -30,11 +32,14 @@ export default function SyncSettings() {
         const response = await fetch('/api/user/platform-settings');
         if (response.ok) {
           const data = await response.json();
-          if (data.githubUsername) {
-            setGithubUsername(data.githubUsername);
+          if (data.settings?.github?.username) {
+            setGithubUsername(data.settings.github.username);
           }
-          if (data.leetcodeUsername) {
-            setLeetcodeUsername(data.leetcodeUsername);
+          if (data.settings?.leetcode?.username) {
+            setLeetcodeUsername(data.settings.leetcode.username);
+          }
+          if (data.settings?.youtube?.channelHandle) {
+            setYoutubeHandle(data.settings.youtube.channelHandle);
           }
         }
       } catch (error) {
@@ -45,7 +50,7 @@ export default function SyncSettings() {
     loadPlatformSettings();
   }, []);
 
-  const updateSyncStatus = (platform: 'github' | 'leetcode', updates: Partial<SyncStatus>) => {
+  const updateSyncStatus = (platform: 'github' | 'leetcode' | 'youtube', updates: Partial<SyncStatus>) => {
     setSyncStatus(prev => prev.map(status => 
       status.platform === platform 
         ? { ...status, ...updates }
@@ -170,6 +175,49 @@ export default function SyncSettings() {
       }
     } catch (error) {
       updateSyncStatus('leetcode', {
+        status: 'error',
+        message: 'Network error occurred'
+      });
+    }
+  };
+
+  const handleYouTubeSync = async () => {
+    if (!youtubeHandle) {
+      updateSyncStatus('youtube', { 
+        status: 'error', 
+        message: 'Please enter YouTube channel handle' 
+      });
+      return;
+    }
+
+    updateSyncStatus('youtube', { status: 'syncing', message: 'Fetching channel data...' });
+
+    try {
+      // Sync YouTube data
+      const response = await fetch('/api/sync/youtube', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          channelHandle: youtubeHandle
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        updateSyncStatus('youtube', {
+          status: 'success',
+          message: `Synced ${data.uploadCount} videos from "${data.channelData.title}". ${data.channelData.subscriberCount} subscribers!`,
+          lastSync: new Date().toISOString()
+        });
+      } else {
+        updateSyncStatus('youtube', {
+          status: 'error',
+          message: data.error || 'YouTube sync failed'
+        });
+      }
+    } catch (error) {
+      updateSyncStatus('youtube', {
         status: 'error',
         message: 'Network error occurred'
       });
@@ -344,6 +392,63 @@ export default function SyncSettings() {
           <div className="text-xs text-muted-foreground">
             Note: Uses LeetCode's GraphQL API to fetch real submission calendar data for the past year.
             This provides actual problem-solving activity from your LeetCode profile.
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* YouTube Sync */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Youtube className="h-5 w-5 mr-2" />
+            YouTube Integration
+            {getStatusBadge(syncStatus.find(s => s.platform === 'youtube')!)}
+          </CardTitle>
+          <CardDescription>
+            Sync your YouTube uploads and create a contribution heatmap
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div>
+            <label htmlFor="youtube-handle" className="text-sm font-medium">YouTube Channel Handle</label>
+            <Input
+              id="youtube-handle"
+              placeholder="@your-channel-handle or channel-name"
+              value={youtubeHandle}
+              onChange={(e) => setYoutubeHandle(e.target.value)}
+            />
+            <div className="text-xs text-muted-foreground mt-1">
+              Enter your channel handle (e.g., @ai-beyond-human) or custom URL name
+            </div>
+          </div>
+          
+          {syncStatus.find(s => s.platform === 'youtube')?.message && (
+            <div className="text-sm text-muted-foreground">
+              {syncStatus.find(s => s.platform === 'youtube')?.message}
+            </div>
+          )}
+
+          <Button 
+            onClick={handleYouTubeSync}
+            disabled={syncStatus.find(s => s.platform === 'youtube')?.status === 'syncing'}
+            className="w-full"
+          >
+            {syncStatus.find(s => s.platform === 'youtube')?.status === 'syncing' ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Syncing...
+              </>
+            ) : (
+              <>
+                <Youtube className="h-4 w-4 mr-2" />
+                Sync YouTube Channel
+              </>
+            )}
+          </Button>
+
+          <div className="text-xs text-muted-foreground">
+            Note: Uses YouTube Data API v3 to fetch your channel information and upload history.
+            Creates a heatmap showing your upload frequency over the past year.
           </div>
         </CardContent>
       </Card>

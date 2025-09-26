@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       hasGitHub: !!(settings?.github?.username && settings?.github?.accessToken),
       hasLeetCode: !!(settings?.leetcode?.username),
+      hasYouTube: !!(settings?.youtube?.channelHandle),
       settings
     });
   } catch (error) {

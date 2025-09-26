@@ -144,6 +144,56 @@ export interface LeetCodeSubmission {
   updatedAt: Date;
 }
 
+// YouTube Upload Model
+export interface YouTubeUpload {
+  _id?: ObjectId;
+  userId: string;
+  videoId: string;
+  title: string;
+  description?: string;
+  publishedAt: Date;
+  thumbnails?: {
+    default?: { url: string; width: number; height: number };
+    medium?: { url: string; width: number; height: number };
+    high?: { url: string; width: number; height: number };
+  };
+  duration?: string; // ISO 8601 format (e.g., "PT15M33S")
+  viewCount?: number;
+  likeCount?: number;
+  commentCount?: number;
+  tags?: string[];
+  categoryId?: string;
+  videoUrl: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// YouTube Channel Model
+export interface YouTubeChannel {
+  _id?: ObjectId;
+  userId: string;
+  channelId: string;
+  channelHandle: string;
+  title: string;
+  description?: string;
+  customUrl?: string;
+  publishedAt?: Date;
+  thumbnails?: {
+    default?: { url: string; width: number; height: number };
+    medium?: { url: string; width: number; height: number };
+    high?: { url: string; width: number; height: number };
+  };
+  statistics: {
+    viewCount: number;
+    subscriberCount: number;
+    videoCount: number;
+  };
+  uploadsPlaylistId: string;
+  lastSyncDate?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // User Platform Settings Model
 export interface UserPlatformSettings {
   _id?: ObjectId;
@@ -157,6 +207,13 @@ export interface UserPlatformSettings {
   leetcode: {
     username?: string;
     sessionCookie?: string; // encrypted
+    lastSyncDate?: Date;
+    syncEnabled: boolean;
+  };
+  youtube: {
+    channelHandle?: string;
+    channelId?: string;
+    uploadsPlaylistId?: string;
     lastSyncDate?: Date;
     syncEnabled: boolean;
   };
@@ -175,5 +232,7 @@ export const COLLECTIONS = {
   USER_PREFERENCES: "user_preferences",
   GITHUB_CONTRIBUTIONS: "github_contributions",
   LEETCODE_SUBMISSIONS: "leetcode_submissions",
-  USER_PLATFORM_SETTINGS: "user_platform_settings"
+  USER_PLATFORM_SETTINGS: "user_platform_settings",
+  YOUTUBE_UPLOADS: "youtube_uploads",
+  YOUTUBE_CHANNELS: "youtube_channels"
 } as const;

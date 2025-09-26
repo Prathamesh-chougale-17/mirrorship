@@ -121,6 +121,45 @@ export async function GET(request: NextRequest) {
       hard: leetcodeSubmissions.filter(s => s.difficulty === 'Hard').length
     };
 
+    // Fetch YouTube uploads
+    const youtubeUploads = await DatabaseService.getYouTubeUploads(
+      user.id,
+      startDate,
+      endDate
+    );
+
+    // Transform YouTube data to contribution graph format
+    const youtubeContributionMap = new Map<string, number>();
+    
+    youtubeUploads.forEach(upload => {
+      const dateStr = upload.publishedAt.toISOString().split('T')[0];
+      youtubeContributionMap.set(dateStr, (youtubeContributionMap.get(dateStr) || 0) + 1);
+    });
+
+    const youtubeData = [];
+    const currentDate = new Date(startDate);
+    
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split('T')[0];
+      const count = youtubeContributionMap.get(dateStr) || 0;
+      youtubeData.push({
+        date: dateStr,
+        count,
+        level: count === 0 ? 0 : Math.min(Math.floor(count / 2) + 1, 4)
+      });
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    // Calculate YouTube stats
+    const youtubeStats = {
+      currentStreak: calculateCurrentStreak(youtubeData),
+      totalUploads: youtubeData.reduce((sum, day) => sum + day.count, 0),
+      thisWeek: youtubeData.slice(-7).reduce((sum, day) => sum + day.count, 0),
+      bestStreak: calculateBestStreak(youtubeData),
+      totalViews: youtubeUploads.reduce((sum, upload) => sum + (upload.viewCount || 0), 0),
+      avgViewsPerVideo: youtubeUploads.length > 0 ? Math.round(youtubeUploads.reduce((sum, upload) => sum + (upload.viewCount || 0), 0) / youtubeUploads.length) : 0
+    };
+
     return NextResponse.json({
       github: {
         data: githubData,
@@ -129,6 +168,10 @@ export async function GET(request: NextRequest) {
       leetcode: {
         data: leetcodeData,
         stats: leetcodeStats
+      },
+      youtube: {
+        data: youtubeData,
+        stats: youtubeStats
       }
     });
 

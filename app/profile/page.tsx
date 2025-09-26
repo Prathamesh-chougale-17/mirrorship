@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
-import { CalendarDays, User, Shield, Github, Edit, Trash2, Plus, ExternalLink, Settings, Activity, BookOpen, Target } from "lucide-react";
+import { CalendarDays, User, Shield, Github, Edit, Trash2, Plus, ExternalLink, Settings, Activity, BookOpen, Target, Youtube, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 
@@ -18,8 +18,11 @@ interface PlatformData {
   githubUsername?: string;
   githubAccessToken?: string;
   leetcodeUsername?: string;
+  youtubeChannelHandle?: string;
+  youtubeChannelId?: string;
   hasGitHub?: boolean;
   hasLeetCode?: boolean;
+  hasYouTube?: boolean;
 }
 
 interface ProfileStats {
@@ -44,8 +47,10 @@ export default function ProfilePage() {
   });
   const [isLoading, setIsLoading] = useState(true);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editingPlatform, setEditingPlatform] = useState<'github' | 'leetcode' | null>(null);
+  const [editingPlatform, setEditingPlatform] = useState<'github' | 'leetcode' | 'youtube' | null>(null);
   const [newUsername, setNewUsername] = useState("");
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -65,8 +70,11 @@ export default function ProfilePage() {
           githubUsername: settings.github?.username,
           githubAccessToken: settings.github?.accessToken,
           leetcodeUsername: settings.leetcode?.username,
+          youtubeChannelHandle: settings.youtube?.channelHandle,
+          youtubeChannelId: settings.youtube?.channelId,
           hasGitHub: !!(settings.github?.username && settings.github?.accessToken),
-          hasLeetCode: !!settings.leetcode?.username
+          hasLeetCode: !!settings.leetcode?.username,
+          hasYouTube: !!settings.youtube?.channelHandle
         });
       }
 
@@ -89,9 +97,15 @@ export default function ProfilePage() {
     }
   };
 
-  const handleEditPlatform = (platform: 'github' | 'leetcode') => {
+  const handleEditPlatform = (platform: 'github' | 'leetcode' | 'youtube') => {
     setEditingPlatform(platform);
-    setNewUsername(platform === 'github' ? platformData.githubUsername || "" : platformData.leetcodeUsername || "");
+    if (platform === 'github') {
+      setNewUsername(platformData.githubUsername || "");
+    } else if (platform === 'leetcode') {
+      setNewUsername(platformData.leetcodeUsername || "");
+    } else if (platform === 'youtube') {
+      setNewUsername(platformData.youtubeChannelHandle || "");
+    }
     setEditDialogOpen(true);
   };
 
@@ -107,9 +121,15 @@ export default function ProfilePage() {
       const patch: any = {};
       if (editingPlatform === 'github') {
         patch.github = { username: newUsername.trim() };
-      } else {
+      } else if (editingPlatform === 'leetcode') {
         patch.leetcode = { username: newUsername.trim() };
+      } else if (editingPlatform === 'youtube') {
+        // For YouTube, we'll sync the channel immediately
+        await handleYouTubeSync(newUsername.trim());
+        setEditDialogOpen(false);
+        return;
       }
+      
       const response = await fetch("/api/user/platform-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -117,19 +137,26 @@ export default function ProfilePage() {
       });
 
       if (response.ok) {
+        const platformKey = editingPlatform === 'github' ? 'githubUsername' : 'leetcodeUsername';
+        const hasKey = `has${editingPlatform.charAt(0).toUpperCase() + editingPlatform.slice(1)}` as keyof PlatformData;
+        
         setPlatformData(prev => ({
           ...prev,
-          [`${editingPlatform}Username`]: newUsername.trim(),
-          [`has${editingPlatform.charAt(0).toUpperCase() + editingPlatform.slice(1)}`]: true
+          [platformKey]: newUsername.trim(),
+          [hasKey]: true
         }));
-        toast.success(`${editingPlatform === 'github' ? 'GitHub' : 'LeetCode'} username updated successfully`);
+        
+        const platformName = editingPlatform === 'github' ? 'GitHub' : 'LeetCode';
+        toast.success(`${platformName} username updated successfully`);
         setEditDialogOpen(false);
         fetchProfileData();
       } else {
         throw new Error("Failed to update username");
       }
     } catch (error) {
-      toast.error(`Failed to update ${editingPlatform === 'github' ? 'GitHub' : 'LeetCode'} username`);
+      const platformName = editingPlatform === 'github' ? 'GitHub' : 
+                          editingPlatform === 'leetcode' ? 'LeetCode' : 'YouTube';
+      toast.error(`Failed to update ${platformName} ${editingPlatform === 'youtube' ? 'channel' : 'username'}`);
     }
   };
 
@@ -174,29 +201,109 @@ export default function ProfilePage() {
     }
   };
 
-  const handleDeletePlatform = async (platform: 'github' | 'leetcode') => {
+  const handleYouTubeSync = async (channelHandle: string) => {
     try {
+      setIsSyncing(true);
+      const response = await fetch("/api/sync/youtube", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ channelHandle })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "YouTube sync failed");
+      }
+
+      const result = await response.json();
+      toast.success(`YouTube channel synced! Found ${result.uploadCount} videos.`);
+      setLastSyncTime(new Date());
+      fetchProfileData(); // Refresh platform data
+    } catch (error) {
+      console.error("YouTube sync error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to sync YouTube channel");
+      throw error;
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleManualSync = async (platforms: string[] = ["github", "leetcode", "youtube"]) => {
+    try {
+      setIsSyncing(true);
+      const response = await fetch("/api/sync/manual", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platforms }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Manual sync failed");
+      }
+
+      const result = await response.json();
+      toast.success(result.message || "Sync completed successfully!");
+      setLastSyncTime(new Date());
+    } catch (error) {
+      console.error("Manual sync error:", error);
+      toast.error(error instanceof Error ? error.message : "Failed to sync data");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
+  const handleDeletePlatform = async (platform: 'github' | 'leetcode' | 'youtube') => {
+    try {
+      let patch: any = {};
+      
+      if (platform === 'github') {
+        patch.github = { username: null };
+      } else if (platform === 'leetcode') {
+        patch.leetcode = { username: null };
+      } else if (platform === 'youtube') {
+        patch.youtube = { channelHandle: null, channelId: null, uploadsPlaylistId: null };
+      }
+
       const response = await fetch("/api/user/platform-settings", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          [`${platform}Username`]: null,
-          [`has${platform.charAt(0).toUpperCase() + platform.slice(1)}`]: false
-        })
+        body: JSON.stringify(patch)
       });
 
       if (response.ok) {
-        setPlatformData(prev => ({
-          ...prev,
-          [`${platform}Username`]: undefined,
-          [`has${platform.charAt(0).toUpperCase() + platform.slice(1)}`]: false
-        }));
-        toast.success(`${platform === 'github' ? 'GitHub' : 'LeetCode'} account disconnected`);
+        if (platform === 'github') {
+          setPlatformData(prev => ({
+            ...prev,
+            githubUsername: undefined,
+            hasGitHub: false
+          }));
+        } else if (platform === 'leetcode') {
+          setPlatformData(prev => ({
+            ...prev,
+            leetcodeUsername: undefined,
+            hasLeetCode: false
+          }));
+        } else if (platform === 'youtube') {
+          setPlatformData(prev => ({
+            ...prev,
+            youtubeChannelHandle: undefined,
+            youtubeChannelId: undefined,
+            hasYouTube: false
+          }));
+        }
+        
+        const platformName = platform === 'github' ? 'GitHub' : 
+                            platform === 'leetcode' ? 'LeetCode' : 'YouTube';
+        toast.success(`${platformName} account disconnected`);
+        fetchProfileData();
       } else {
         throw new Error("Failed to disconnect account");
       }
     } catch (error) {
-      toast.error(`Failed to disconnect ${platform === 'github' ? 'GitHub' : 'LeetCode'} account`);
+      const platformName = platform === 'github' ? 'GitHub' : 
+                          platform === 'leetcode' ? 'LeetCode' : 'YouTube';
+      toast.error(`Failed to disconnect ${platformName} account`);
     }
   };
 
@@ -398,11 +505,34 @@ export default function ProfilePage() {
               Platform Connections
             </CardTitle>
             <CardDescription>
-              Manage your GitHub and LeetCode account connections
+              Manage your GitHub, LeetCode, and YouTube account connections for data syncing
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <CardContent className="space-y-6">
+            {/* Sync Actions */}
+            <div className="flex flex-col sm:flex-row gap-4 p-4 bg-muted/50 rounded-lg">
+              <div className="flex-1">
+                <h4 className="font-medium mb-1">Data Synchronization</h4>
+                <p className="text-sm text-muted-foreground">
+                  Sync your latest data from connected platforms
+                </p>
+                {lastSyncTime && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Last sync: {lastSyncTime.toLocaleString()}
+                  </p>
+                )}
+              </div>
+              <Button 
+                onClick={() => handleManualSync()} 
+                disabled={isSyncing}
+                className="shrink-0"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isSyncing ? 'animate-spin' : ''}`} />
+                {isSyncing ? 'Syncing...' : 'Sync All'}
+              </Button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {/* GitHub Connection */}
               <div className="border rounded-lg p-6 space-y-4">
                 <div className="flex items-center justify-between">
@@ -518,6 +648,54 @@ export default function ProfilePage() {
                   )}
                 </div>
               </div>
+
+              {/* YouTube Connection */}
+              <div className="border rounded-lg p-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Youtube className="h-8 w-8 text-red-600" />
+                    <div>
+                      <h3 className="font-semibold">YouTube</h3>
+                      <p className="text-sm text-muted-foreground">Connect your YouTube channel</p>
+                    </div>
+                  </div>
+                  {platformData.hasYouTube ? (
+                    <Badge variant="secondary" className="bg-red-100 text-red-800">Connected</Badge>
+                  ) : (
+                    <Badge variant="outline">Not Connected</Badge>
+                  )}
+                </div>
+                
+                {platformData.youtubeChannelHandle && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Channel:</span>
+                    <code className="bg-muted px-2 py-1 rounded text-sm">{platformData.youtubeChannelHandle}</code>
+                  </div>
+                )}
+                
+                <div className="flex gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => handleEditPlatform('youtube')}
+                    disabled={isSyncing}
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    {platformData.youtubeChannelHandle ? 'Edit' : 'Add Channel'}
+                  </Button>
+                  
+                  {platformData.youtubeChannelHandle && (
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      onClick={() => handleDeletePlatform('youtube')}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -527,26 +705,48 @@ export default function ProfilePage() {
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
-                {editingPlatform === 'github' ? 'Edit GitHub Username' : 'Edit LeetCode Username'}
+                {editingPlatform === 'github' ? 'Edit GitHub Username' : 
+                 editingPlatform === 'leetcode' ? 'Edit LeetCode Username' : 
+                 'Connect YouTube Channel'}
               </DialogTitle>
               <DialogDescription>
-                Enter your {editingPlatform === 'github' ? 'GitHub' : 'LeetCode'} username to connect your account.
+                {editingPlatform === 'youtube' 
+                  ? 'Enter your YouTube channel handle (e.g., @ai-beyond-human) to sync your video uploads.'
+                  : `Enter your ${editingPlatform === 'github' ? 'GitHub' : 'LeetCode'} username to connect your account.`
+                }
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-2">
-              <label className="text-sm font-medium">Username</label>
+              <label className="text-sm font-medium">
+                {editingPlatform === 'youtube' ? 'Channel Handle' : 'Username'}
+              </label>
               <Input
                 value={newUsername}
                 onChange={(e) => setNewUsername(e.target.value)}
-                placeholder={`Enter your ${editingPlatform === 'github' ? 'GitHub' : 'LeetCode'} username`}
+                placeholder={editingPlatform === 'youtube' 
+                  ? '@your-channel-handle' 
+                  : `Enter your ${editingPlatform === 'github' ? 'GitHub' : 'LeetCode'} username`
+                }
               />
+              {editingPlatform === 'youtube' && (
+                <p className="text-xs text-muted-foreground">
+                  This will fetch your channel information and sync all video uploads for data visualization.
+                </p>
+              )}
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
                 Cancel
               </Button>
-              <Button onClick={handleSavePlatform} disabled={!newUsername.trim()}>
-                Save Username
+              <Button onClick={handleSavePlatform} disabled={!newUsername.trim() || isSyncing}>
+                {isSyncing ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Syncing...
+                  </>
+                ) : (
+                  editingPlatform === 'youtube' ? 'Connect & Sync' : 'Save Username'
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
