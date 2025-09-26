@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useRouter } from "next/navigation";
 import { CalendarDays, User, Shield, Github, Edit, Trash2, Plus, ExternalLink, Settings, Activity, BookOpen, Target, Youtube, RefreshCw } from "lucide-react";
@@ -316,10 +317,125 @@ export default function ProfilePage() {
       .slice(0, 2);
   };
 
-  if (isPending) {
+  if (isPending || isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
+        <div className="container mx-auto px-4 py-8">
+          {/* Header Section Skeleton */}
+          <div className="text-center mb-12">
+            <div className="relative inline-block">
+              <Skeleton className="h-32 w-32 rounded-full border-4 border-white shadow-2xl" />
+              <div className="absolute -bottom-2 -right-2">
+                <Skeleton className="h-6 w-16 rounded-full" />
+              </div>
+            </div>
+            <Skeleton className="h-10 w-64 mt-6 mx-auto" />
+            <Skeleton className="h-6 w-48 mt-2 mx-auto" />
+            <Skeleton className="h-4 w-32 mt-1 mx-auto" />
+          </div>
+
+          {/* Stats Cards Skeleton */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i} className="text-center border-0">
+                <CardContent className="p-6">
+                  <Skeleton className="h-8 w-8 mx-auto mb-2" />
+                  <Skeleton className="h-8 w-16 mx-auto mb-1" />
+                  <Skeleton className="h-4 w-20 mx-auto" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Personal Information Skeleton */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-5" />
+                  <Skeleton className="h-6 w-40" />
+                </div>
+                <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i}>
+                      <Skeleton className="h-4 w-20 mb-2" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions Skeleton */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-5" />
+                  <Skeleton className="h-6 w-32" />
+                </div>
+                <Skeleton className="h-4 w-48" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <Skeleton key={i} className="h-10 w-full" />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Platform Connections Skeleton */}
+          <Card className="mt-8">
+            <CardHeader>
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-5 w-5" />
+                <Skeleton className="h-6 w-48" />
+              </div>
+              <Skeleton className="h-4 w-80" />
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Sync Actions Skeleton */}
+              <div className="flex flex-col sm:flex-row gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="flex-1">
+                  <Skeleton className="h-5 w-32 mb-2" />
+                  <Skeleton className="h-4 w-64" />
+                </div>
+                <Skeleton className="h-10 w-32 shrink-0" />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <Card key={i}>
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Skeleton className="h-10 w-10 rounded-lg" />
+                          <div>
+                            <Skeleton className="h-5 w-20 mb-1" />
+                            <Skeleton className="h-3 w-24" />
+                          </div>
+                        </div>
+                        <Skeleton className="h-6 w-16" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                      <div className="flex gap-2">
+                        <Skeleton className="h-8 flex-1" />
+                        <Skeleton className="h-8 w-8" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   }

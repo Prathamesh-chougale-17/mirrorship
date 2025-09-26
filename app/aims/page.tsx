@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { KanbanProvider, KanbanBoard, KanbanHeader, KanbanCards, KanbanCard } from "@/components/ui/kibo-ui/kanban";
@@ -231,8 +232,59 @@ export default function NotesPage() {
 
   if (isPending || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Skeleton */}
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Skeleton className="h-8 w-8" />
+              <Skeleton className="h-8 w-32" />
+            </div>
+            <Skeleton className="h-5 w-64" />
+          </div>
+          <Skeleton className="h-10 w-28" />
+        </div>
+
+        {/* Kanban Board Skeleton */}
+        <div className="h-[calc(100vh-200px)]">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 h-full">
+            {columns.map((column) => (
+              <Card key={column.id} className="flex flex-col h-full">
+                <CardHeader className="p-4 border-b">
+                  <div className="flex items-center justify-between">
+                    <Skeleton className="h-6 w-20" />
+                    <Skeleton className="h-6 w-8 rounded-full" />
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-auto p-4 space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Card key={i} className="p-4">
+                      <div className="space-y-3">
+                        <div className="flex items-start justify-between">
+                          <Skeleton className="h-5 w-32" />
+                          <div className="flex items-center gap-1 ml-2">
+                            <Skeleton className="h-6 w-6" />
+                            <Skeleton className="h-6 w-6" />
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-full" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </div>
+                        
+                        <div className="flex items-center justify-between">
+                          <Skeleton className="h-6 w-16" />
+                          <Skeleton className="h-4 w-20" />
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }

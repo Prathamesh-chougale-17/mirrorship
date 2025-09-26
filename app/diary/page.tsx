@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import type { Editor, JSONContent } from "@/components/ui/kibo-ui/editor";
 import {
   EditorBubbleMenu,
@@ -184,10 +185,116 @@ export default function DiaryPage() {
     });
   };
 
-  if (isPending) {
+  if (isPending || isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header Skeleton */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <Skeleton className="h-8 w-8" />
+                <Skeleton className="h-8 w-32" />
+              </div>
+              <Skeleton className="h-5 w-80" />
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-4 w-4" />
+                <Skeleton className="h-10 w-32" />
+              </div>
+              <Skeleton className="h-10 w-20" />
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4 text-sm">
+            <Skeleton className="h-4 w-20" />
+            <Skeleton className="h-4 w-1" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-1" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Editor Skeleton */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Title Input Skeleton */}
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-28" />
+              </CardHeader>
+              <CardContent>
+                <Skeleton className="h-12 w-full" />
+              </CardContent>
+            </Card>
+
+            {/* Rich Text Editor Skeleton */}
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+                <Skeleton className="h-4 w-64" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <Skeleton className="h-96 w-full rounded-lg" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sidebar Skeleton */}
+          <div className="space-y-6">
+            {/* Mood Selector Skeleton */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-5" />
+                  <Skeleton className="h-6 w-40" />
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-5 gap-2">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Skeleton key={i} className="h-16 w-full" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* AI Summary Skeleton */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-5" />
+                  <Skeleton className="h-6 w-28" />
+                </div>
+                <Skeleton className="h-4 w-48" />
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-3/4" />
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tips Skeleton */}
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-32" />
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <Skeleton key={i} className="h-4 w-full" />
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
