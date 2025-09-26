@@ -11,7 +11,7 @@ on:
       force_sync:
         description: 'Force sync all users'
         required: false
-        default: 'false'
+        default: false
         type: boolean
 
 jobs:
@@ -31,26 +31,48 @@ jobs:
           node-version: '18'
           cache: 'npm'
 
-      - name: Install dependencies
-        run: |
-          npm ci
-          # Install specific dependencies for the sync script
-          npm install mongodb
-
       - name: Setup environment
         env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://your-app-domain.com' }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
         run: |
-          echo "MONGODB_URI=$MONGODB_URI" >> $GITHUB_ENV
+          # Set default if API_BASE_URL is not set
+          if [ -z "$API_BASE_URL" ]; then
+            API_BASE_URL="https://your-app-domain.com"
+          fi
           echo "API_BASE_URL=$API_BASE_URL" >> $GITHUB_ENV
+          echo "ADMIN_API_KEY=$ADMIN_API_KEY" >> $GITHUB_ENV
 
-      - name: Run data sync
-        run: node scripts/sync-data.js
+      - name: Call batch sync API
+        run: |
+          echo "🔄 Starting batch sync..."
+          
+          # Call the batch sync API endpoint
+          RESPONSE=$(curl -X POST "$API_BASE_URL/api/sync/batch" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $ADMIN_API_KEY" \
+            -d '{"syncAll": true}' \
+            -w "HTTP_STATUS:%{http_code}" \
+            -s --show-error)
+          
+          # Extract HTTP status and response body
+          HTTP_STATUS=$(echo "$RESPONSE" | grep -o "HTTP_STATUS:[0-9]*" | cut -d: -f2)
+          RESPONSE_BODY=$(echo "$RESPONSE" | sed 's/HTTP_STATUS:[0-9]*$//')
+          
+          echo "HTTP Status: $HTTP_STATUS"
+          echo "Response: $RESPONSE_BODY"
+          
+          # Check if the request was successful
+          if [[ "$HTTP_STATUS" -eq 200 ]]; then
+            echo "✅ Batch sync completed successfully!"
+          else
+            echo "❌ Batch sync failed with status $HTTP_STATUS"
+            echo "$RESPONSE_BODY"
+            exit 1
+          fi
         env:
-          MONGODB_URI: ${{ secrets.MONGODB_URI }}
-          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://your-app-domain.com' }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          ADMIN_API_KEY: ${{ secrets.ADMIN_API_KEY }}
 
       - name: Report success
         if: success()

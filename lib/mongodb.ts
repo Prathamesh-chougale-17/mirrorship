@@ -218,6 +218,39 @@ export class DatabaseService {
     };
   }
 
+  // Get all users with platform settings for batch operations
+  static async getUsersWithPlatformSettings(): Promise<any[]> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const usersCollection = db.collection('users');
+    
+    // Find users who have platform settings
+    const users = await usersCollection.aggregate([
+      {
+        $lookup: {
+          from: COLLECTIONS.USER_PLATFORM_SETTINGS,
+          localField: '_id',
+          foreignField: 'userId',
+          as: 'platformSettings'
+        }
+      },
+      {
+        $match: {
+          platformSettings: { $ne: [] } // Only users with platform settings
+        }
+      },
+      {
+        $project: {
+          _id: 1,
+          email: 1,
+          name: 1
+        }
+      }
+    ]).toArray();
+    
+    return users;
+  }
+
   private static calculateStreak(activities: { date: Date; active: boolean }[]): number {
     const sortedActivities = activities
       .filter(a => a.active)

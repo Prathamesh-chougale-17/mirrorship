@@ -1,6 +1,12 @@
 # Data Sync System
 
-This document explains how to set up and use the automated data sync system for GitHub and LeetCode contributions.
+This do### GitHub Actions Secrets
+
+Add the following secrets to your GitHub repository settings:
+
+- `API_BASE_URL` - Your deployed application's base URL (e.g., https://your-app.vercel.app)
+- `ADMIN_API_KEY` - A secure API key for batch operations (generate a random string)
+- `SLACK_WEBHOOK_URL` - (Optional) Slack webhook for failure notificationsexplains how to set up and use the automated data sync system for GitHub and LeetCode contributions.
 
 ## Overview
 
@@ -25,6 +31,7 @@ Create a `.env.local` file in your project root with the following variables:
 ```env
 MONGODB_URI=your_mongodb_connection_string
 API_BASE_URL=https://your-app-domain.com
+ADMIN_API_KEY=your_secure_admin_api_key_for_batch_operations
 ```
 
 ### 2. GitHub Actions Secrets
@@ -84,6 +91,8 @@ The GitHub Actions workflow automatically runs every 6 hours:
 - 06:00 UTC
 - 12:00 UTC
 - 18:00 UTC
+
+The workflow calls your deployed application's `/api/sync/batch` endpoint with admin authentication to sync all users' data.
 
 You can also trigger it manually from the GitHub Actions tab.
 
