@@ -21,7 +21,12 @@ import {
   Heart,
   Clock,
   GitBranch,
-  RefreshCw
+  RefreshCw,
+  ExternalLink,
+  Code,
+  Zap,
+  AlertTriangle,
+  Trophy
 } from "lucide-react";
 import { 
   ContributionGraph, 
@@ -260,6 +265,78 @@ export default function DashboardPage() {
     if (totalStreak > 5) return "🚀 Good streak! Keep pushing forward!";
     if (githubTotal + leetcodeTotal > 100) return "📈 Amazing progress this year!";
     return "✨ Every day is a new opportunity to grow!";
+  };
+
+  const getTodaysLeetCodeActivity = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todaysData = contributionData.leetcode.data.find(day => day.date === today);
+    return todaysData?.count || 0;
+  };
+
+  const getLeetCodeMotivation = () => {
+    const todaysSolved = getTodaysLeetCodeActivity();
+    const currentStreak = contributionData.leetcode.stats.solveStreak;
+    const dailyGoal = 15;
+    
+    if (todaysSolved === 0) {
+      if (currentStreak === 0) {
+        return {
+          message: "🎯 Start your coding journey today!",
+          description: `Goal: ${dailyGoal} problems today. Every expert was once a beginner.`,
+          action: "Start Problem Solving",
+          urgency: "high"
+        };
+      } else {
+        return {
+          message: `⚠️ Don't break your ${currentStreak}-day streak!`,
+          description: `You need ${dailyGoal} problems to stay on track. Time is ticking!`,
+          action: "Save Your Streak",
+          urgency: "high"
+        };
+      }
+    } else if (todaysSolved < 5) {
+      return {
+        message: `🚨 You're way behind! Only ${todaysSolved}/${dailyGoal} problems solved`,
+        description: "You're out of aim! Need to seriously grind to catch up today.",
+        action: "Grind Mode ON",
+        urgency: "critical"
+      };
+    } else if (todaysSolved < 10) {
+      return {
+        message: `⚡ Slow start - ${todaysSolved}/${dailyGoal} problems done`,
+        description: "You're behind your daily goal. Time to accelerate!",
+        action: "Speed Up",
+        urgency: "high"
+      };
+    } else if (todaysSolved < 15) {
+      return {
+        message: `📈 Good progress - ${todaysSolved}/${dailyGoal} problems`,
+        description: `Only ${15 - todaysSolved} more to reach your daily goal!`,
+        action: "Finish Strong",
+        urgency: "medium"
+      };
+    } else if (todaysSolved === 15) {
+      return {
+        message: `🎯 Perfect! Daily goal achieved - ${todaysSolved} problems`,
+        description: "You're exactly on target. Want to go above and beyond?",
+        action: "Exceed Your Goal",
+        urgency: "low"
+      };
+    } else if (todaysSolved < 20) {
+      return {
+        message: `🔥 Excellent! ${todaysSolved} problems solved today`,
+        description: "You've exceeded your daily goal! You're building elite skills.",
+        action: "Keep Dominating",
+        urgency: "success"
+      };
+    } else {
+      return {
+        message: `🏆 BEAST MODE! ${todaysSolved} problems conquered`,
+        description: "You're absolutely crushing it! This is elite-level dedication.",
+        action: "Unstoppable Force",
+        urgency: "success"
+      };
+    }
   };
 
   if (isPending || isLoading || platformSettings.isLoading) {
@@ -724,6 +801,122 @@ export default function DashboardPage() {
                     </div>
                   </div>
                 </div>
+
+                {/* LeetCode Motivation Section */}
+                {(() => {
+                  const motivation = getLeetCodeMotivation();
+                  const todaysSolved = getTodaysLeetCodeActivity();
+                  
+                  type Urgency = 'critical' | 'high' | 'medium' | 'low' | 'success';
+                  const urgencyStyles: Record<Urgency, {
+                    background: string;
+                    border: string;
+                    iconBg: string;
+                    iconColor: string;
+                    textColor: string;
+                    descColor: string;
+                    buttonStyle: string;
+                    icon: React.ComponentType<any>;
+                  }> = {
+                    critical: {
+                      background: 'bg-gradient-to-r from-red-100 to-orange-100 dark:from-red-950/40 dark:to-orange-950/40',
+                      border: 'border-red-300 dark:border-red-700',
+                      iconBg: 'bg-red-500/20',
+                      iconColor: 'text-red-600 dark:text-red-400',
+                      textColor: 'text-red-900 dark:text-red-100',
+                      descColor: 'text-red-700 dark:text-red-300',
+                      buttonStyle: 'bg-red-600 hover:bg-red-700 text-white animate-pulse',
+                      icon: AlertTriangle
+                    },
+                    high: {
+                      background: 'bg-gradient-to-r from-orange-100 to-red-100 dark:from-orange-950/30 dark:to-red-950/30',
+                      border: 'border-orange-300 dark:border-orange-700',
+                      iconBg: 'bg-orange-500/20',
+                      iconColor: 'text-orange-600 dark:text-orange-400',
+                      textColor: 'text-orange-900 dark:text-orange-100',
+                      descColor: 'text-orange-700 dark:text-orange-300',
+                      buttonStyle: 'bg-orange-600 hover:bg-orange-700 text-white',
+                      icon: Zap
+                    },
+                    medium: {
+                      background: 'bg-gradient-to-r from-yellow-100 to-orange-100 dark:from-yellow-950/30 dark:to-orange-950/30',
+                      border: 'border-yellow-300 dark:border-yellow-700',
+                      iconBg: 'bg-yellow-500/20',
+                      iconColor: 'text-yellow-600 dark:text-yellow-400',
+                      textColor: 'text-yellow-900 dark:text-yellow-100',
+                      descColor: 'text-yellow-700 dark:text-yellow-300',
+                      buttonStyle: 'bg-yellow-600 hover:bg-yellow-700 text-white',
+                      icon: TrendingUp
+                    },
+                    low: {
+                      background: 'bg-gradient-to-r from-blue-100 to-purple-100 dark:from-blue-950/30 dark:to-purple-950/30',
+                      border: 'border-blue-300 dark:border-blue-700',
+                      iconBg: 'bg-blue-500/20',
+                      iconColor: 'text-blue-600 dark:text-blue-400',
+                      textColor: 'text-blue-900 dark:text-blue-100',
+                      descColor: 'text-blue-700 dark:text-blue-300',
+                      buttonStyle: 'bg-blue-600 hover:bg-blue-700 text-white',
+                      icon: Target
+                    },
+                    success: {
+                      background: 'bg-gradient-to-r from-green-100 to-emerald-100 dark:from-green-950/30 dark:to-emerald-950/30',
+                      border: 'border-green-300 dark:border-green-700',
+                      iconBg: 'bg-green-500/20',
+                      iconColor: 'text-green-600 dark:text-green-400',
+                      textColor: 'text-green-900 dark:text-green-100',
+                      descColor: 'text-green-700 dark:text-green-300',
+                      buttonStyle: 'bg-green-600 hover:bg-green-700 text-white',
+                      icon: Trophy
+                    }
+                  };
+
+                  const urgency = (motivation.urgency ?? 'medium') as Urgency;
+                  const style = urgencyStyles[urgency] || urgencyStyles.medium;
+                  const IconComponent = style.icon;
+                  
+                  return (
+                    <div className={`mt-4 p-4 rounded-lg border ${style.background} ${style.border}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`p-2 rounded-full ${style.iconBg}`}>
+                            <IconComponent className={`h-5 w-5 ${style.iconColor}`} />
+                          </div>
+                          <div>
+                            <div className={`font-semibold ${style.textColor}`}>
+                              {motivation.message}
+                            </div>
+                            <div className={`text-sm ${style.descColor}`}>
+                              {motivation.description}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {motivation.urgency === 'critical' && (
+                            <div className="text-xs font-medium text-red-600 dark:text-red-400 px-2 py-1 bg-red-100 dark:bg-red-950/50 rounded">
+                              OUT OF AIM!
+                            </div>
+                          )}
+                          <Button 
+                            size="sm" 
+                            asChild
+                            className={`text-xs ${style.buttonStyle}`}
+                          >
+                            <a 
+                              href="https://takeuforward.org/strivers-a2z-dsa-course/strivers-a2z-dsa-course-sheet-2/" 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1"
+                            >
+                              {motivation.action}
+                              <ExternalLink className="h-3 w-3" />
+                            </a>
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
