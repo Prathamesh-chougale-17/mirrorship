@@ -6,6 +6,19 @@ export class AIService {
   private static model = google("gemini-2.5-flash");
 
   /**
+   * Clean AI response text to extract JSON from markdown code blocks
+   */
+  private static cleanJsonResponse(text: string): string {
+    let cleanedText = text.trim();
+    if (cleanedText.startsWith('```json')) {
+      cleanedText = cleanedText.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+    } else if (cleanedText.startsWith('```')) {
+      cleanedText = cleanedText.replace(/^```\s*/, '').replace(/\s*```$/, '');
+    }
+    return cleanedText;
+  }
+
+  /**
    * Generate a daily summary from diary entry and activities
    */
   static async generateDailySummary(
@@ -77,7 +90,7 @@ Respond in JSON format:
         temperature: 0.3,
       });
 
-      const parsed = JSON.parse(text);
+      const parsed = JSON.parse(this.cleanJsonResponse(text));
       return {
         score: Math.max(1, Math.min(5, parsed.score)),
         analysis: parsed.analysis
@@ -111,7 +124,7 @@ Respond with a JSON array of strings:
         temperature: 0.4,
       });
 
-      const tags = JSON.parse(text);
+      const tags = JSON.parse(this.cleanJsonResponse(text));
       return Array.isArray(tags) ? tags.slice(0, 5) : [];
     } catch (error) {
       console.error("Error generating tags:", error);
@@ -182,7 +195,7 @@ Focus on:
 
   private static parseDailySummaryResponse(text: string) {
     try {
-      const parsed = JSON.parse(text);
+      const parsed = JSON.parse(this.cleanJsonResponse(text));
       return {
         summary: parsed.summary || "No summary available",
         insights: Array.isArray(parsed.insights) ? parsed.insights : [],
@@ -202,7 +215,7 @@ Focus on:
 
   private static parseWeeklySummaryResponse(text: string) {
     try {
-      const parsed = JSON.parse(text);
+      const parsed = JSON.parse(this.cleanJsonResponse(text));
       return {
         summary: parsed.summary || "No summary available",
         insights: Array.isArray(parsed.insights) ? parsed.insights : [],

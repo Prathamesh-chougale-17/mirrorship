@@ -109,7 +109,19 @@ export default function DiaryPage() {
       if (data.entry) {
         setEntry(data.entry);
         setTitle(data.entry.title);
-        setContent(data.entry.content);
+        
+        // Parse content if it's a JSON string, otherwise use as-is
+        let parsedContent = data.entry.content;
+        if (typeof data.entry.content === 'string') {
+          try {
+            // Try to parse as JSON (for content from rich text editor)
+            parsedContent = JSON.parse(data.entry.content);
+          } catch {
+            // If parsing fails, treat as plain text
+            parsedContent = data.entry.content;
+          }
+        }
+        setContent(parsedContent);
         setSelectedMood(data.entry.mood);
       } else {
         // No entry for this date
@@ -127,16 +139,17 @@ export default function DiaryPage() {
   };
 
   const saveEntry = async () => {
-    if (!session?.user || !title.trim() || !content.trim()) {
+    if (!session?.user || !title.trim() || isContentEmpty()) {
       toast.error("Please fill in both title and content");
       return;
     }
 
     setIsSaving(true);
     try {
+      const contentToSave = typeof content === 'string' ? content.trim() : JSON.stringify(content);
       const payload = {
         title: title.trim(),
-        content: content.trim(),
+        content: contentToSave,
         date: selectedDate,
         mood: selectedMood,
       };
@@ -183,6 +196,51 @@ export default function DiaryPage() {
       month: 'long',
       day: 'numeric'
     });
+  };
+
+  const isContentEmpty = () => {
+    if (typeof content === 'string') {
+      return !content.trim();
+    }
+    // For JSONContent, check if it's empty or only contains empty paragraphs
+    if (!content || !content.content || content.content.length === 0) {
+      return true;
+    }
+    // Check if all content is just empty text nodes
+    return content.content.every(node => {
+      if (!node.content || node.content.length === 0) {
+        return true;
+      }
+      // Check if it's just empty text
+      if (node.content.length === 1 && node.content[0].type === 'text') {
+        return !node.content[0].text || !node.content[0].text.trim();
+      }
+      // For other node types, consider them as non-empty
+      return false;
+    });
+  };
+
+  const extractTextFromContent = (content: JSONContent | string): string => {
+    if (typeof content === 'string') {
+      return content;
+    }
+    if (!content || !content.content) {
+      return '';
+    }
+    
+    let text = '';
+    const traverse = (nodes: any[]) => {
+      nodes.forEach(node => {
+        if (node.type === 'text' && node.text) {
+          text += node.text + ' ';
+        } else if (node.content) {
+          traverse(node.content);
+        }
+      });
+    };
+    
+    traverse(content.content);
+    return text.trim();
   };
 
   if (isPending || isLoading) {
@@ -349,7 +407,7 @@ export default function DiaryPage() {
             {/* Save Button */}
             <Button 
               onClick={saveEntry} 
-              disabled={isSaving || !title.trim() || !content.trim()}
+              disabled={isSaving || !title.trim() || isContentEmpty()}
               className="flex items-center gap-2"
             >
               <Save className="h-4 w-4" />
