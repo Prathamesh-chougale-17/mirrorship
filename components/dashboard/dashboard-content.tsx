@@ -3,8 +3,6 @@
 import { TrendsChart } from "./trends-chart";
 import { RecentEntries } from "./recent-entries";
 import { TaskProgress } from "./task-progress";
-import { ActivitySummaryCard } from "./activity-summary";
-import { QuickActions } from "./quick-actions";
 
 interface DashboardData {
   stats: {
@@ -23,12 +21,7 @@ interface DashboardData {
     wordCount: number;
     aiSummary?: string;
   }>;
-  activitySummary: Array<{
-    _id: string;
-    count: number;
-    totalValue: number;
-    avgValue: number;
-  }>;
+
   kanbanSummary: {
     todo: number;
     'in-progress': number;
@@ -44,10 +37,9 @@ interface DashboardData {
 interface DashboardContentProps {
   dashboardData: DashboardData | null;
   moodEmojis: { [key: number]: string };
-  activityColors: { [key: string]: string };
 }
 
-export function DashboardContent({ dashboardData, moodEmojis, activityColors }: DashboardContentProps) {
+export function DashboardContent({ dashboardData, moodEmojis }: DashboardContentProps) {
   return (
     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
       {/* Recent Entries & Trends - Takes 3 columns on large screens */}
@@ -62,11 +54,6 @@ export function DashboardContent({ dashboardData, moodEmojis, activityColors }: 
       {/* Compact Sidebar - Takes 1 column */}
       <div className="space-y-4">
         <TaskProgress kanbanSummary={dashboardData?.kanbanSummary} />
-        <ActivitySummaryCard 
-          activities={dashboardData?.activitySummary}
-          activityColors={activityColors}
-        />
-        <QuickActions />
       </div>
     </div>
   );

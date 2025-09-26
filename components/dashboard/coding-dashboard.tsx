@@ -9,7 +9,6 @@ import {
   GitBranch, 
   Target, 
   Flame, 
-  ArrowRight, 
   Code, 
   ExternalLink,
   AlertTriangle,
@@ -362,24 +361,6 @@ export function CodingDashboard({
               );
             })()}
 
-            {/* Quick Actions */}
-            <div className="flex items-center justify-between pt-2 border-t">
-              <div className="text-xs text-muted-foreground">
-                Last sync: {lastSyncTime ? lastSyncTime.toLocaleTimeString() : 'Never'}
-              </div>
-              <div className="flex gap-2">
-                {platformSettings.hasGitHub && (
-                  <Button size="sm" variant="outline" asChild className="text-xs">
-                    <a href="https://github.com" target="_blank">GitHub <ArrowRight className="h-3 w-3 ml-1" /></a>
-                  </Button>
-                )}
-                {platformSettings.hasLeetCode && (
-                  <Button size="sm" variant="outline" asChild className="text-xs">
-                    <a href="https://leetcode.com" target="_blank">LeetCode <ArrowRight className="h-3 w-3 ml-1" /></a>
-                  </Button>
-                )}
-              </div>
-            </div>
           </div>
         )}
       </CardContent>

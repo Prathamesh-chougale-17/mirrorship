@@ -127,15 +127,6 @@ export default function DashboardPage() {
   });
 
   const moodEmojis = { 1: "😔", 2: "😕", 3: "😐", 4: "😊", 5: "😄" };
-  
-  const activityColors = {
-    github: "#22c55e",
-    social: "#3b82f6", 
-    learning: "#8b5cf6",
-    exercise: "#f59e0b",
-    reading: "#ef4444",
-    custom: "#6b7280"
-  };
 
   useEffect(() => {
     if (session?.user?.id) {
@@ -386,7 +377,6 @@ export default function DashboardPage() {
       <DashboardContent 
         dashboardData={dashboardData} 
         moodEmojis={moodEmojis}
-        activityColors={activityColors}
       />
     </div>
   );
