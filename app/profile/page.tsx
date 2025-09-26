@@ -671,23 +671,25 @@ export default function ProfilePage() {
                     <code className="bg-muted px-2 py-1 rounded text-sm">@{platformData.githubUsername}</code>
                   </div>
                 )}
-                <div className="flex items-center gap-2">
+                <div className="space-y-2">
                   <span className="text-sm text-muted-foreground">Access Token:</span>
                   {platformData.githubAccessToken ? (
-                    <>
-                      <code className="bg-muted px-2 py-1 rounded text-sm">
+                    <div className="space-y-2">
+                      <code className="bg-muted px-2 py-1 rounded text-sm break-all block">
                         {showGithubToken ? platformData.githubAccessToken : '••••••••••••••••••••••••••••••••'}
                       </code>
-                      <Button size="sm" variant="ghost" onClick={() => setShowGithubToken(v => !v)}>
-                        {showGithubToken ? 'Hide' : 'Show'}
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={handleEditGithubToken}>
-                        <Edit className="h-4 w-4 mr-1" />Edit
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={handleDeleteGithubToken}>
-                        <Trash2 className="h-4 w-4 mr-1" />Remove
-                      </Button>
-                    </>
+                      <div className="flex flex-wrap gap-2">
+                        <Button size="sm" variant="ghost" onClick={() => setShowGithubToken(v => !v)}>
+                          {showGithubToken ? 'Hide' : 'Show'}
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleEditGithubToken}>
+                          <Edit className="h-4 w-4 mr-1" />Edit
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={handleDeleteGithubToken}>
+                          <Trash2 className="h-4 w-4 mr-1" />Remove
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     <Button size="sm" variant="outline" onClick={handleEditGithubToken}>
                       <Plus className="h-4 w-4 mr-1" />Add Token
