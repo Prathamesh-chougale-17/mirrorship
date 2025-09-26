@@ -6,7 +6,6 @@ import { toast } from "sonner";
 import { 
   DashboardHeader, 
   CodingDashboard, 
-  StatsOverview, 
   DashboardContent 
 } from "@/components/dashboard";
 import { type Activity as ContributionActivity } from "@/components/ui/kibo-ui/contribution-graph";
@@ -380,11 +379,8 @@ export default function DashboardPage() {
         getLeetCodeMotivation={getLeetCodeMotivation}
         getTodaysLeetCodeActivity={getTodaysLeetCodeActivity}
         onManualSync={(platforms) => handleManualSync(platforms)}
-      />
-
-      <StatsOverview 
-        stats={dashboardData?.stats} 
-        kanbanSummary={dashboardData?.kanbanSummary} 
+        stats={dashboardData?.stats}
+        kanbanSummary={dashboardData?.kanbanSummary}
       />
 
       <DashboardContent 

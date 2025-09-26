@@ -14,8 +14,8 @@ import {
   ExternalLink,
   AlertTriangle,
   Zap,
-  TrendingUp,
-  Trophy
+  Trophy,
+  BookOpen
 } from "lucide-react";
 import { 
   ContributionGraph, 
@@ -62,6 +62,22 @@ interface Motivation {
   urgency: 'critical' | 'high' | 'medium' | 'low' | 'success';
 }
 
+interface DashboardStats {
+  streak: number;
+  totalEntries: number;
+  entriesThisMonth: number;
+  hasEntryToday: boolean;
+  totalNotes: number;
+  recentActivities: number;
+}
+
+interface KanbanSummary {
+  todo: number;
+  'in-progress': number;
+  done: number;
+  total: number;
+}
+
 interface CodingDashboardProps {
   platformSettings: PlatformSettings;
   contributionData: ContributionData;
@@ -71,6 +87,8 @@ interface CodingDashboardProps {
   getTodaysLeetCodeActivity: () => number;
   getLeetCodeMotivation: () => Motivation;
   onManualSync: (platforms?: string[]) => void;
+  stats?: DashboardStats;
+  kanbanSummary?: KanbanSummary;
 }
 
 export function CodingDashboard({
@@ -81,7 +99,9 @@ export function CodingDashboard({
   isSyncing,
   getTodaysLeetCodeActivity,
   getLeetCodeMotivation,
-  onManualSync
+  onManualSync,
+  stats,
+  kanbanSummary
 }: CodingDashboardProps) {
   // Filter contribution data to show only last 9 months
   const filterLast9Months = (data: ContributionActivity[]): ContributionActivity[] => {
@@ -121,37 +141,82 @@ export function CodingDashboard({
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Compact, Creative Streak Badges */}
-            <div className="flex flex-wrap gap-3 justify-center items-center">
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 border border-green-300 dark:border-green-700 shadow-sm">
-                <GitBranch className="w-4 h-4 text-green-600" />
-                <span className="font-semibold text-green-900 dark:text-green-100">GitHub</span>
-                <span className="text-lg font-bold text-green-800 dark:text-green-200">
-                  {platformSettings.hasGitHub ? contributionData.github.stats.currentStreak : '--'}
-                </span>
-                <span className="text-xs text-green-700 dark:text-green-300 ml-1">day streak</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-orange-100 to-orange-200 dark:from-orange-900 dark:to-orange-800 border border-orange-300 dark:border-orange-700 shadow-sm">
-                <Target className="w-4 h-4 text-orange-600" />
-                <span className="font-semibold text-orange-900 dark:text-orange-100">LeetCode</span>
-                <span className="text-lg font-bold text-orange-800 dark:text-orange-200">
-                  {platformSettings.hasLeetCode ? contributionData.leetcode.stats.solveStreak : '--'}
-                </span>
-                <span className="text-xs text-orange-700 dark:text-orange-300 ml-1">day streak</span>
-              </div>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-100 to-indigo-200 dark:from-purple-900 dark:to-indigo-900 border border-purple-300 dark:border-purple-700 shadow-sm">
-                <Flame className="w-4 h-4 text-purple-600" />
-                <span className="font-semibold text-purple-900 dark:text-purple-100">Combined</span>
-                <span className="text-lg font-bold text-purple-800 dark:text-purple-200">
-                  {(platformSettings.hasGitHub ? contributionData.github.stats.currentStreak : 0) + 
-                   (platformSettings.hasLeetCode ? contributionData.leetcode.stats.solveStreak : 0)}
-                </span>
-                <span className="text-xs text-purple-700 dark:text-purple-300 ml-1">total days</span>
-              </div>
-              {lastSyncTime && (
-                <span className="ml-2 text-xs text-muted-foreground">Synced {lastSyncTime.toLocaleTimeString()}</span>
-              )}
+            {/* General Stats Overview */}
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-500/10 rounded-full">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">{stats?.streak || 0}</div>
+                    <div className="text-xs text-muted-foreground">Writing streak</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/10 rounded-full">
+                    <BookOpen className="h-4 w-4 text-blue-500" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">{stats?.totalEntries || 0}</div>
+                    <div className="text-xs text-muted-foreground">Total entries</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-500/10 rounded-full">
+                    <Target className="h-4 w-4 text-green-500" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">{kanbanSummary?.total || 0}</div>
+                    <div className="text-xs text-muted-foreground">Active notes</div>
+                  </div>
+                </div>
+              </Card>
             </div>
+
+            {/* Coding Stats Overview - Compact Cards */}
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-500/10 rounded-full">
+                    <GitBranch className="h-4 w-4 text-green-500" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">
+                      {platformSettings.hasGitHub ? contributionData.github.stats.currentStreak : 0}
+                    </div>
+                    <div className="text-xs text-muted-foreground">GitHub streak</div>
+                  </div>
+                </div>
+              </Card>
+
+              <Card className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-orange-500/10 rounded-full">
+                    <Target className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">
+                      {platformSettings.hasLeetCode ? contributionData.leetcode.stats.solveStreak : 0}
+                    </div>
+                    <div className="text-xs text-muted-foreground">LeetCode streak</div>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Sync Status */}
+            {lastSyncTime && (
+              <div className="text-center mb-4">
+                <span className="text-xs text-muted-foreground">Last synced: {lastSyncTime.toLocaleTimeString()}</span>
+              </div>
+            )}
 
             {/* Contribution Heatmaps - Larger, More Prominent */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
