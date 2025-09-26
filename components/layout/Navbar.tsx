@@ -40,6 +40,7 @@ export function Navbar() {
     { href: "/", label: "Home", icon: Home, public: true },
     { href: "/dashboard", label: "Dashboard", icon: BarChart3, public: false },
     { href: "/diary", label: "Diary", icon: BookOpen, public: false },
+    { href: "/sync", label: "Sync", icon: Settings, public: false },
   ];
 
   const isActive = (path: string) => pathname === path;

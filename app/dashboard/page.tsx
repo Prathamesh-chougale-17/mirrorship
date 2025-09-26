@@ -82,6 +82,11 @@ export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [platformSettings, setPlatformSettings] = useState({
+    hasGitHub: false,
+    hasLeetCode: false,
+    isLoading: true
+  });
   const [contributionData, setContributionData] = useState({
     github: {
       currentStreak: 7,
@@ -143,6 +148,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (session?.user) {
       fetchDashboardData();
+      fetchPlatformSettings();
       // Simulate real-time updates (in a real app, this would come from APIs)
       const interval = setInterval(() => {
         const now = new Date();
@@ -177,6 +183,26 @@ export default function DashboardPage() {
       toast.error("Failed to load dashboard data");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchPlatformSettings = async () => {
+    try {
+      const response = await fetch("/api/user/platform-settings");
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch platform settings");
+      }
+      
+      setPlatformSettings({
+        hasGitHub: data.hasGitHub,
+        hasLeetCode: data.hasLeetCode,
+        isLoading: false
+      });
+    } catch (error) {
+      console.error("Error fetching platform settings:", error);
+      setPlatformSettings(prev => ({ ...prev, isLoading: false }));
     }
   };
 
@@ -274,78 +300,124 @@ export default function DashboardPage() {
                 </div>
               </div>
               <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
-                {contributionData.github.lastSevenDays[6] > 0 ? "Today ✅" : "Pending"}
+                {platformSettings.hasGitHub ? 
+                  (contributionData.github.lastSevenDays[6] > 0 ? "Today ✅" : "Pending") : 
+                  "Not Connected"
+                }
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Current Streak</span>
-                <div className="flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-orange-500" />
-                  <span className="font-bold text-lg">{contributionData.github.currentStreak} days</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">This Week</span>
-                <span className="text-green-600 font-medium">{contributionData.github.thisWeek} contributions</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Best Streak</span>
-                <span className="text-muted-foreground">{contributionData.github.bestStreak} days</span>
-              </div>
-              {/* GitHub Contribution Heatmap */}
-              <div className="mt-4 -mx-2">
-                <div className="text-xs text-muted-foreground mb-2 px-2">Last 12 months of contributions</div>
-                <ContributionGraph 
-                  data={githubContributions} 
-                  blockSize={10}
-                  blockMargin={2}
-                  fontSize={11}
-                  className="text-xs"
-                >
-                  <ContributionGraphCalendar hideMonthLabels>
-                    {({ activity, dayIndex, weekIndex }) => (
-                      <ContributionGraphBlock
-                        activity={activity}
-                        dayIndex={dayIndex}
-                        weekIndex={weekIndex}
-                        className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-green-200 data-[level='2']:fill-green-400 data-[level='3']:fill-green-600 data-[level='4']:fill-green-800 dark:data-[level='1']:fill-green-900 dark:data-[level='2']:fill-green-700 dark:data-[level='3']:fill-green-500 dark:data-[level='4']:fill-green-300"
-                        title={`${activity.count} contributions on ${activity.date}`}
-                      />
-                    )}
-                  </ContributionGraphCalendar>
-                  <ContributionGraphFooter className="text-xs px-2">
-                    <ContributionGraphTotalCount />
-                    <ContributionGraphLegend />
-                  </ContributionGraphFooter>
-                </ContributionGraph>
-              </div>
-              <div className="mt-4 pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-muted-foreground">
-                    {contributionData.github.currentStreak > 0 ? 
-                      `🔥 ${contributionData.github.currentStreak} day streak!` : 
-                      "Sync your GitHub to start tracking!"
-                    }
+            {!platformSettings.hasGitHub ? (
+              <div className="relative">
+                {/* Blurred background */}
+                <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm rounded-lg z-10"></div>
+                {/* Blurred content */}
+                <div className="filter blur-sm">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Current Streak</span>
+                      <div className="flex items-center gap-2">
+                        <Flame className="h-4 w-4 text-orange-500" />
+                        <span className="font-bold text-lg">-- days</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">This Week</span>
+                      <span className="text-green-600 font-medium">-- contributions</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Best Streak</span>
+                      <span className="text-muted-foreground">-- days</span>
+                    </div>
+                    <div className="mt-4 -mx-2">
+                      <div className="text-xs text-muted-foreground mb-2 px-2">Connect GitHub to see contributions</div>
+                      <div className="h-20 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href="/sync" className="text-xs">
-                        Sync Data
-                        <GitBranch className="h-3 w-3 ml-1" />
+                </div>
+                {/* Centered add button */}
+                <div className="absolute inset-0 flex items-center justify-center z-20">
+                  <div className="text-center">
+                    <Button asChild size="lg" className="mb-2">
+                      <Link href="/sync">
+                        <GitBranch className="h-5 w-5 mr-2" />
+                        Connect GitHub
                       </Link>
                     </Button>
-                    <Button size="sm" variant="ghost" asChild>
-                      <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-xs">
-                        <ArrowRight className="h-3 w-3" />
-                      </a>
-                    </Button>
+                    <p className="text-sm text-muted-foreground">Track your coding contributions</p>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Current Streak</span>
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    <span className="font-bold text-lg">{contributionData.github.currentStreak} days</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">This Week</span>
+                  <span className="text-green-600 font-medium">{contributionData.github.thisWeek} contributions</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Best Streak</span>
+                  <span className="text-muted-foreground">{contributionData.github.bestStreak} days</span>
+                </div>
+                {/* GitHub Contribution Heatmap */}
+                <div className="mt-4 -mx-2">
+                  <div className="text-xs text-muted-foreground mb-2 px-2">Last 12 months of contributions</div>
+                  <ContributionGraph 
+                    data={githubContributions} 
+                    blockSize={10}
+                    blockMargin={2}
+                    fontSize={11}
+                    className="text-xs"
+                  >
+                    <ContributionGraphCalendar hideMonthLabels>
+                      {({ activity, dayIndex, weekIndex }) => (
+                        <ContributionGraphBlock
+                          activity={activity}
+                          dayIndex={dayIndex}
+                          weekIndex={weekIndex}
+                          className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-green-200 data-[level='2']:fill-green-400 data-[level='3']:fill-green-600 data-[level='4']:fill-green-800 dark:data-[level='1']:fill-green-900 dark:data-[level='2']:fill-green-700 dark:data-[level='3']:fill-green-500 dark:data-[level='4']:fill-green-300"
+                          title={`${activity.count} contributions on ${activity.date}`}
+                        />
+                      )}
+                    </ContributionGraphCalendar>
+                    <ContributionGraphFooter className="text-xs px-2">
+                      <ContributionGraphTotalCount />
+                      <ContributionGraphLegend />
+                    </ContributionGraphFooter>
+                  </ContributionGraph>
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">
+                      {contributionData.github.currentStreak > 0 ? 
+                        `🔥 ${contributionData.github.currentStreak} day streak!` : 
+                        "Sync your GitHub to start tracking!"
+                      }
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href="/sync" className="text-xs">
+                          Sync Data
+                          <GitBranch className="h-3 w-3 ml-1" />
+                        </Link>
+                      </Button>
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-xs">
+                          <ArrowRight className="h-3 w-3" />
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -363,106 +435,168 @@ export default function DashboardPage() {
                 </div>
               </div>
               <Badge variant="secondary" className="bg-orange-500/20 text-orange-100 border-orange-400/30">
-                {contributionData.leetcode.thisWeek > 0 ? "Active 💪" : "Start Today!"}
+                {platformSettings.hasLeetCode ? 
+                  (contributionData.leetcode.thisWeek > 0 ? "Active 💪" : "Start Today!") : 
+                  "Not Connected"
+                }
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Solve Streak</span>
-                <div className="flex items-center gap-2">
-                  <Flame className="h-4 w-4 text-orange-500" />
-                  <span className="font-bold text-lg">{contributionData.leetcode.solveStreak} days</span>
-                </div>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">Problems Solved</span>
-                <span className="text-orange-600 font-medium">{contributionData.leetcode.totalSolved} / 3000+</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium">This Week</span>
-                <span className="text-muted-foreground">{contributionData.leetcode.thisWeek} problems</span>
-              </div>
-              {/* LeetCode Problem Solving Heatmap */}
-              <div className="mt-4 -mx-2">
-                <div className="text-xs text-muted-foreground mb-2 px-2">Problem solving activity</div>
-                <ContributionGraph 
-                  data={leetcodeContributions} 
-                  blockSize={10}
-                  blockMargin={2}
-                  fontSize={11}
-                  className="text-xs"
-                  labels={{
-                    totalCount: "{{count}} problems solved in {{year}}",
-                    legend: { less: "0", more: "8+" }
-                  }}
-                >
-                  <ContributionGraphCalendar hideMonthLabels>
-                    {({ activity, dayIndex, weekIndex }) => (
-                      <ContributionGraphBlock
-                        activity={activity}
-                        dayIndex={dayIndex}
-                        weekIndex={weekIndex}
-                        className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-orange-200 data-[level='2']:fill-orange-400 data-[level='3']:fill-orange-600 data-[level='4']:fill-orange-800 dark:data-[level='1']:fill-orange-900 dark:data-[level='2']:fill-orange-700 dark:data-[level='3']:fill-orange-500 dark:data-[level='4']:fill-orange-300"
-                        title={`${activity.count} problems solved on ${activity.date}`}
-                      />
-                    )}
-                  </ContributionGraphCalendar>
-                  <ContributionGraphFooter className="text-xs px-2">
-                    <ContributionGraphTotalCount />
-                    <ContributionGraphLegend />
-                  </ContributionGraphFooter>
-                </ContributionGraph>
-              </div>
-              
-              {/* Difficulty Breakdown */}
-              <div className="mt-4 pt-4 border-t">
-                <div className="flex justify-between text-xs text-muted-foreground mb-2">
-                  <span>Difficulty Distribution</span>
-                  <span>{contributionData.leetcode.totalSolved} total</span>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="text-center">
-                    <div className="font-semibold text-green-600">{contributionData.leetcode.easy}</div>
-                    <div className="text-muted-foreground">Easy</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-semibold text-yellow-600">{contributionData.leetcode.medium}</div>
-                    <div className="text-muted-foreground">Medium</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="font-semibold text-red-600">{contributionData.leetcode.hard}</div>
-                    <div className="text-muted-foreground">Hard</div>
+            {!platformSettings.hasLeetCode ? (
+              <div className="relative">
+                {/* Blurred background */}
+                <div className="absolute inset-0 bg-white/50 dark:bg-black/50 backdrop-blur-sm rounded-lg z-10"></div>
+                {/* Blurred content */}
+                <div className="filter blur-sm">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Solve Streak</span>
+                      <div className="flex items-center gap-2">
+                        <Flame className="h-4 w-4 text-orange-500" />
+                        <span className="font-bold text-lg">-- days</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Problems Solved</span>
+                      <span className="text-orange-600 font-medium">-- / 3000+</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">This Week</span>
+                      <span className="text-muted-foreground">-- problems</span>
+                    </div>
+                    <div className="mt-4 -mx-2">
+                      <div className="text-xs text-muted-foreground mb-2 px-2">Connect LeetCode to see progress</div>
+                      <div className="h-20 bg-gray-200 dark:bg-gray-800 rounded"></div>
+                    </div>
+                    <div className="mt-4 pt-4 border-t">
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div className="text-center">
+                          <div className="font-semibold text-green-600">--</div>
+                          <div className="text-muted-foreground">Easy</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-semibold text-yellow-600">--</div>
+                          <div className="text-muted-foreground">Medium</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="font-semibold text-red-600">--</div>
+                          <div className="text-muted-foreground">Hard</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="mt-4 pt-4 border-t">
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-muted-foreground">
-                    {contributionData.leetcode.solveStreak > 7 ? 
-                      `🚀 Amazing ${contributionData.leetcode.solveStreak} day streak!` : 
-                      contributionData.leetcode.solveStreak > 0 ?
-                      `💪 ${contributionData.leetcode.solveStreak} day streak!` :
-                      "Sync your LeetCode to start tracking!"
-                    }
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" asChild>
-                      <Link href="/sync" className="text-xs">
-                        Sync Data
-                        <Target className="h-3 w-3 ml-1" />
+                {/* Centered add button */}
+                <div className="absolute inset-0 flex items-center justify-center z-20">
+                  <div className="text-center">
+                    <Button asChild size="lg" className="mb-2">
+                      <Link href="/sync">
+                        <Target className="h-5 w-5 mr-2" />
+                        Connect LeetCode
                       </Link>
                     </Button>
-                    <Button size="sm" variant="ghost" asChild>
-                      <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer" className="text-xs">
-                        <ArrowRight className="h-3 w-3" />
-                      </a>
-                    </Button>
+                    <p className="text-sm text-muted-foreground">Track your problem solving progress</p>
                   </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Solve Streak</span>
+                  <div className="flex items-center gap-2">
+                    <Flame className="h-4 w-4 text-orange-500" />
+                    <span className="font-bold text-lg">{contributionData.leetcode.solveStreak} days</span>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Problems Solved</span>
+                  <span className="text-orange-600 font-medium">{contributionData.leetcode.totalSolved} / 3000+</span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">This Week</span>
+                  <span className="text-muted-foreground">{contributionData.leetcode.thisWeek} problems</span>
+                </div>
+                {/* LeetCode Problem Solving Heatmap */}
+                <div className="mt-4 -mx-2">
+                  <div className="text-xs text-muted-foreground mb-2 px-2">Problem solving activity</div>
+                  <ContributionGraph 
+                    data={leetcodeContributions} 
+                    blockSize={10}
+                    blockMargin={2}
+                    fontSize={11}
+                    className="text-xs"
+                    labels={{
+                      totalCount: "{{count}} problems solved in {{year}}",
+                      legend: { less: "0", more: "8+" }
+                    }}
+                  >
+                    <ContributionGraphCalendar hideMonthLabels>
+                      {({ activity, dayIndex, weekIndex }) => (
+                        <ContributionGraphBlock
+                          activity={activity}
+                          dayIndex={dayIndex}
+                          weekIndex={weekIndex}
+                          className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-orange-200 data-[level='2']:fill-orange-400 data-[level='3']:fill-orange-600 data-[level='4']:fill-orange-800 dark:data-[level='1']:fill-orange-900 dark:data-[level='2']:fill-orange-700 dark:data-[level='3']:fill-orange-500 dark:data-[level='4']:fill-orange-300"
+                          title={`${activity.count} problems solved on ${activity.date}`}
+                        />
+                      )}
+                    </ContributionGraphCalendar>
+                    <ContributionGraphFooter className="text-xs px-2">
+                      <ContributionGraphTotalCount />
+                      <ContributionGraphLegend />
+                    </ContributionGraphFooter>
+                  </ContributionGraph>
+                </div>
+                
+                {/* Difficulty Breakdown */}
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex justify-between text-xs text-muted-foreground mb-2">
+                    <span>Difficulty Distribution</span>
+                    <span>{contributionData.leetcode.totalSolved} total</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div className="text-center">
+                      <div className="font-semibold text-green-600">{contributionData.leetcode.easy}</div>
+                      <div className="text-muted-foreground">Easy</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-semibold text-yellow-600">{contributionData.leetcode.medium}</div>
+                      <div className="text-muted-foreground">Medium</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-semibold text-red-600">{contributionData.leetcode.hard}</div>
+                      <div className="text-muted-foreground">Hard</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-muted-foreground">
+                      {contributionData.leetcode.solveStreak > 7 ? 
+                        `🚀 Amazing ${contributionData.leetcode.solveStreak} day streak!` : 
+                        contributionData.leetcode.solveStreak > 0 ?
+                        `💪 ${contributionData.leetcode.solveStreak} day streak!` :
+                        "Sync your LeetCode to start tracking!"
+                      }
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" asChild>
+                        <Link href="/sync" className="text-xs">
+                          Sync Data
+                          <Target className="h-3 w-3 ml-1" />
+                        </Link>
+                      </Button>
+                      <Button size="sm" variant="ghost" asChild>
+                        <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer" className="text-xs">
+                          <ArrowRight className="h-3 w-3" />
+                        </a>
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -710,9 +844,11 @@ export default function DashboardPage() {
                   Add Task
                 </Link>
               </Button>
-              <Button variant="outline" size="sm" className="w-full justify-start">
-                <GitBranch className="h-4 w-4 mr-2" />
-                Sync GitHub
+              <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                <Link href="/sync">
+                  <GitBranch className="h-4 w-4 mr-2" />
+                  {platformSettings.hasGitHub ? "Sync GitHub" : "Connect GitHub"}
+                </Link>
               </Button>
             </CardContent>
           </Card>

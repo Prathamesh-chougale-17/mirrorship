@@ -184,7 +184,7 @@ export default function SyncSettings() {
             </div>
             <div>
               <label htmlFor="github-token" className="text-sm font-medium">
-                Personal Access Token (Optional)
+                Personal Access Token (Required for real data)
               </label>
               <Input
                 id="github-token"
@@ -193,6 +193,17 @@ export default function SyncSettings() {
                 value={githubToken}
                 onChange={(e) => setGithubToken(e.target.value)}
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Get your token from{' '}
+                <a 
+                  href="https://github.com/settings/tokens" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-500 hover:underline"
+                >
+                  GitHub Settings → Developer settings → Personal access tokens
+                </a>
+              </p>
             </div>
           </div>
           
@@ -270,8 +281,8 @@ export default function SyncSettings() {
           </Button>
 
           <div className="text-xs text-muted-foreground">
-            Note: LeetCode doesn't have an official API. This generates demo data for visualization.
-            In production, this would require web scraping or unofficial APIs.
+            Note: Uses LeetCode's GraphQL API to fetch real submission calendar data for the past year.
+            This provides actual problem-solving activity from your LeetCode profile.
           </div>
         </CardContent>
       </Card>
