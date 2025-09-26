@@ -89,82 +89,34 @@ export default function DashboardPage() {
   });
   const [contributionData, setContributionData] = useState({
     github: {
-      currentStreak: 7,
-      thisWeek: 23,
-      bestStreak: 45,
-      lastSevenDays: [4, 2, 0, 3, 1, 5, 2]
+      data: [] as ContributionActivity[],
+      stats: {
+        currentStreak: 0,
+        totalContributions: 0,
+        thisWeek: 0,
+        bestStreak: 0
+      }
     },
     leetcode: {
-      solveStreak: 12,
-      totalSolved: 247,
-      thisWeek: 8,
-      easy: 120,
-      medium: 98,
-      hard: 29
+      data: [] as ContributionActivity[],
+      stats: {
+        solveStreak: 0,
+        totalSolved: 0,
+        thisWeek: 0,
+        easy: 0,
+        medium: 0,
+        hard: 0
+      }
     }
   });
 
-  // Generate GitHub-style contribution data (last 12 months)
-  const generateContributionData = (type: 'github' | 'leetcode'): ContributionActivity[] => {
-    const data: ContributionActivity[] = [];
-    const today = new Date();
-    const startDate = new Date(today);
-    startDate.setMonth(startDate.getMonth() - 12);
-
-    for (let d = new Date(startDate); d <= today; d.setDate(d.getDate() + 1)) {
-      const dateStr = d.toISOString().split('T')[0];
-      let count = 0;
-      let level = 0;
-
-      if (type === 'github') {
-        // Simulate GitHub contributions (commits, PRs, etc.)
-        const random = Math.random();
-        if (random > 0.3) { // 70% chance of activity
-          count = Math.floor(Math.random() * 15) + 1;
-          level = count === 0 ? 0 : Math.min(4, Math.floor(count / 4) + 1);
-        }
-      } else {
-        // Simulate LeetCode problem solving
-        const random = Math.random();
-        if (random > 0.4) { // 60% chance of solving problems
-          count = Math.floor(Math.random() * 8) + 1;
-          level = count === 0 ? 0 : Math.min(4, Math.floor(count / 2) + 1);
-        }
-      }
-
-      data.push({
-        date: dateStr,
-        count,
-        level
-      });
-    }
-
-    return data;
-  };
-
-  const githubContributions = generateContributionData('github');
-  const leetcodeContributions = generateContributionData('leetcode');
+  const [contributionsLoading, setContributionsLoading] = useState(true);
 
   useEffect(() => {
     if (session?.user) {
       fetchDashboardData();
       fetchPlatformSettings();
-      // Simulate real-time updates (in a real app, this would come from APIs)
-      const interval = setInterval(() => {
-        const now = new Date();
-        if (now.getHours() === 0 && now.getMinutes() === 0) {
-          // Reset daily at midnight
-          setContributionData(prev => ({
-            ...prev,
-            github: {
-              ...prev.github,
-              lastSevenDays: [Math.floor(Math.random() * 6), ...prev.github.lastSevenDays.slice(0, 6)]
-            }
-          }));
-        }
-      }, 60000); // Check every minute
-
-      return () => clearInterval(interval);
+      fetchContributionData();
     }
   }, [session?.user]);
 
@@ -206,10 +158,50 @@ export default function DashboardPage() {
     }
   };
 
+  const fetchContributionData = async () => {
+    try {
+      setContributionsLoading(true);
+      const response = await fetch("/api/contributions");
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to fetch contribution data");
+      }
+      
+      setContributionData({
+        github: {
+          data: data.github.data || [],
+          stats: data.github.stats || {
+            currentStreak: 0,
+            totalContributions: 0,
+            thisWeek: 0,
+            bestStreak: 0
+          }
+        },
+        leetcode: {
+          data: data.leetcode.data || [],
+          stats: data.leetcode.stats || {
+            solveStreak: 0,
+            totalSolved: 0,
+            thisWeek: 0,
+            easy: 0,
+            medium: 0,
+            hard: 0
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching contribution data:", error);
+      toast.error("Failed to load contribution data");
+    } finally {
+      setContributionsLoading(false);
+    }
+  };
+
   const getMotivationalMessage = () => {
-    const totalStreak = contributionData.github.currentStreak + contributionData.leetcode.solveStreak;
-    const githubTotal = githubContributions.reduce((sum, day) => sum + day.count, 0);
-    const leetcodeTotal = leetcodeContributions.reduce((sum, day) => sum + day.count, 0);
+    const totalStreak = contributionData.github.stats.currentStreak + contributionData.leetcode.stats.solveStreak;
+    const githubTotal = contributionData.github.stats.totalContributions;
+    const leetcodeTotal = contributionData.leetcode.stats.totalSolved;
     
     if (totalStreak > 30) return "🏆 Incredible! You're a coding machine!";
     if (totalStreak > 20) return "🔥 You're on fire! Keep the momentum going!";
@@ -219,7 +211,7 @@ export default function DashboardPage() {
     return "✨ Every day is a new opportunity to grow!";
   };
 
-  if (isPending || isLoading) {
+  if (isPending || isLoading || platformSettings.isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
@@ -277,7 +269,7 @@ export default function DashboardPage() {
           </div>
           <div className="text-right">
             <div className="text-lg font-bold text-blue-900 dark:text-blue-100">
-              {contributionData.github.currentStreak + contributionData.leetcode.solveStreak} days
+              {contributionData.github.stats.currentStreak + contributionData.leetcode.stats.solveStreak} days
             </div>
             <div className="text-xs text-blue-600 dark:text-blue-400">Combined streak</div>
           </div>
@@ -301,7 +293,7 @@ export default function DashboardPage() {
               </div>
               <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
                 {platformSettings.hasGitHub ? 
-                  (contributionData.github.lastSevenDays[6] > 0 ? "Today ✅" : "Pending") : 
+                  (contributionData.github.stats.thisWeek > 0 ? "This Week ✅" : "Pending") : 
                   "Not Connected"
                 }
               </Badge>
@@ -349,28 +341,32 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+            ) : contributionsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Current Streak</span>
                   <div className="flex items-center gap-2">
                     <Flame className="h-4 w-4 text-orange-500" />
-                    <span className="font-bold text-lg">{contributionData.github.currentStreak} days</span>
+                    <span className="font-bold text-lg">{contributionData.github.stats.currentStreak} days</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">This Week</span>
-                  <span className="text-green-600 font-medium">{contributionData.github.thisWeek} contributions</span>
+                  <span className="text-green-600 font-medium">{contributionData.github.stats.thisWeek} contributions</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Best Streak</span>
-                  <span className="text-muted-foreground">{contributionData.github.bestStreak} days</span>
+                  <span className="text-muted-foreground">{contributionData.github.stats.bestStreak} days</span>
                 </div>
                 {/* GitHub Contribution Heatmap */}
                 <div className="mt-4 -mx-2">
                   <div className="text-xs text-muted-foreground mb-2 px-2">Last 12 months of contributions</div>
                   <ContributionGraph 
-                    data={githubContributions} 
+                    data={contributionData.github.data} 
                     blockSize={10}
                     blockMargin={2}
                     fontSize={11}
@@ -396,17 +392,21 @@ export default function DashboardPage() {
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
-                      {contributionData.github.currentStreak > 0 ? 
-                        `🔥 ${contributionData.github.currentStreak} day streak!` : 
+                      {contributionData.github.stats.currentStreak > 0 ? 
+                        `🔥 ${contributionData.github.stats.currentStreak} day streak!` : 
                         "Sync your GitHub to start tracking!"
                       }
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" asChild>
-                        <Link href="/sync" className="text-xs">
-                          Sync Data
-                          <GitBranch className="h-3 w-3 ml-1" />
-                        </Link>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={fetchContributionData} 
+                        disabled={contributionsLoading}
+                        className="text-xs"
+                      >
+                        {contributionsLoading ? "Loading..." : "Refresh"}
+                        <GitBranch className="h-3 w-3 ml-1" />
                       </Button>
                       <Button size="sm" variant="ghost" asChild>
                         <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-xs">
@@ -436,7 +436,7 @@ export default function DashboardPage() {
               </div>
               <Badge variant="secondary" className="bg-orange-500/20 text-orange-100 border-orange-400/30">
                 {platformSettings.hasLeetCode ? 
-                  (contributionData.leetcode.thisWeek > 0 ? "Active 💪" : "Start Today!") : 
+                  (contributionData.leetcode.stats.thisWeek > 0 ? "Active 💪" : "Start Today!") : 
                   "Not Connected"
                 }
               </Badge>
@@ -500,28 +500,32 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
+            ) : contributionsLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+              </div>
             ) : (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Solve Streak</span>
                   <div className="flex items-center gap-2">
                     <Flame className="h-4 w-4 text-orange-500" />
-                    <span className="font-bold text-lg">{contributionData.leetcode.solveStreak} days</span>
+                    <span className="font-bold text-lg">{contributionData.leetcode.stats.solveStreak} days</span>
                   </div>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Problems Solved</span>
-                  <span className="text-orange-600 font-medium">{contributionData.leetcode.totalSolved} / 3000+</span>
+                  <span className="text-orange-600 font-medium">{contributionData.leetcode.stats.totalSolved} / 3000+</span>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">This Week</span>
-                  <span className="text-muted-foreground">{contributionData.leetcode.thisWeek} problems</span>
+                  <span className="text-muted-foreground">{contributionData.leetcode.stats.thisWeek} problems</span>
                 </div>
                 {/* LeetCode Problem Solving Heatmap */}
                 <div className="mt-4 -mx-2">
                   <div className="text-xs text-muted-foreground mb-2 px-2">Problem solving activity</div>
                   <ContributionGraph 
-                    data={leetcodeContributions} 
+                    data={contributionData.leetcode.data} 
                     blockSize={10}
                     blockMargin={2}
                     fontSize={11}
@@ -553,19 +557,19 @@ export default function DashboardPage() {
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex justify-between text-xs text-muted-foreground mb-2">
                     <span>Difficulty Distribution</span>
-                    <span>{contributionData.leetcode.totalSolved} total</span>
+                    <span>{contributionData.leetcode.stats.totalSolved} total</span>
                   </div>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div className="text-center">
-                      <div className="font-semibold text-green-600">{contributionData.leetcode.easy}</div>
+                      <div className="font-semibold text-green-600">{contributionData.leetcode.stats.easy}</div>
                       <div className="text-muted-foreground">Easy</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-semibold text-yellow-600">{contributionData.leetcode.medium}</div>
+                      <div className="font-semibold text-yellow-600">{contributionData.leetcode.stats.medium}</div>
                       <div className="text-muted-foreground">Medium</div>
                     </div>
                     <div className="text-center">
-                      <div className="font-semibold text-red-600">{contributionData.leetcode.hard}</div>
+                      <div className="font-semibold text-red-600">{contributionData.leetcode.stats.hard}</div>
                       <div className="text-muted-foreground">Hard</div>
                     </div>
                   </div>
@@ -573,19 +577,23 @@ export default function DashboardPage() {
                 <div className="mt-4 pt-4 border-t">
                   <div className="flex items-center justify-between">
                     <div className="text-xs text-muted-foreground">
-                      {contributionData.leetcode.solveStreak > 7 ? 
-                        `🚀 Amazing ${contributionData.leetcode.solveStreak} day streak!` : 
-                        contributionData.leetcode.solveStreak > 0 ?
-                        `💪 ${contributionData.leetcode.solveStreak} day streak!` :
+                      {contributionData.leetcode.stats.solveStreak > 7 ? 
+                        `🚀 Amazing ${contributionData.leetcode.stats.solveStreak} day streak!` : 
+                        contributionData.leetcode.stats.solveStreak > 0 ?
+                        `💪 ${contributionData.leetcode.stats.solveStreak} day streak!` :
                         "Sync your LeetCode to start tracking!"
                       }
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" asChild>
-                        <Link href="/sync" className="text-xs">
-                          Sync Data
-                          <Target className="h-3 w-3 ml-1" />
-                        </Link>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={fetchContributionData} 
+                        disabled={contributionsLoading}
+                        className="text-xs"
+                      >
+                        {contributionsLoading ? "Loading..." : "Refresh"}
+                        <Target className="h-3 w-3 ml-1" />
                       </Button>
                       <Button size="sm" variant="ghost" asChild>
                         <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer" className="text-xs">
