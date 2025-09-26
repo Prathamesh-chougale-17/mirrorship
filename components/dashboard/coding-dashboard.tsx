@@ -141,71 +141,73 @@ export function CodingDashboard({
           </div>
         ) : (
           <div className="space-y-6">
-            {/* General Stats Overview */}
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-500/10 rounded-full">
-                    <Flame className="h-4 w-4 text-orange-500" />
+            {/* Ultra Compact Stats - 5 Cards in Single Row */}
+            <div className="grid grid-cols-5 gap-3 mb-4">
+              {/* Writing Streak */}
+              <Card className="p-3 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:block p-1.5 bg-orange-500/10 rounded-full">
+                    <Flame className="h-3.5 w-3.5 text-orange-500" />
                   </div>
-                  <div>
-                    <div className="text-lg font-bold">{stats?.streak || 0}</div>
-                    <div className="text-xs text-muted-foreground">Writing streak</div>
-                  </div>
-                </div>
-              </Card>
-
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-blue-500/10 rounded-full">
-                    <BookOpen className="h-4 w-4 text-blue-500" />
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold">{stats?.totalEntries || 0}</div>
-                    <div className="text-xs text-muted-foreground">Total entries</div>
+                  <div className="flex-1 min-w-0 sm:text-left text-center">
+                    <div className="text-sm font-bold leading-none">{stats?.streak || 0}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-none">Day Streak</div>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-500/10 rounded-full">
-                    <Target className="h-4 w-4 text-green-500" />
+              {/* Total Entries */}
+              <Card className="p-3 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:block p-1.5 bg-blue-500/10 rounded-full">
+                    <BookOpen className="h-3.5 w-3.5 text-blue-500" />
                   </div>
-                  <div>
-                    <div className="text-lg font-bold">{kanbanSummary?.total || 0}</div>
-                    <div className="text-xs text-muted-foreground">Active notes</div>
+                  <div className="flex-1 min-w-0 sm:text-left text-center">
+                    <div className="text-sm font-bold leading-none">{stats?.totalEntries || 0}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-none">Total Entries</div>
                   </div>
                 </div>
               </Card>
-            </div>
 
-            {/* Coding Stats Overview - Compact Cards */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-green-500/10 rounded-full">
-                    <GitBranch className="h-4 w-4 text-green-500" />
+              {/* Active Notes */}
+              <Card className="p-3 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:block p-1.5 bg-green-500/10 rounded-full">
+                    <Target className="h-3.5 w-3.5 text-green-500" />
                   </div>
-                  <div>
-                    <div className="text-lg font-bold">
+                  <div className="flex-1 min-w-0 sm:text-left text-center">
+                    <div className="text-sm font-bold leading-none">{kanbanSummary?.total || 0}</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-none">Active Notes</div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* GitHub Streak */}
+              <Card className="p-3 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:block p-1.5 bg-emerald-500/10 rounded-full">
+                    <GitBranch className="h-3.5 w-3.5 text-emerald-500" />
+                  </div>
+                  <div className="flex-1 min-w-0 sm:text-left text-center">
+                    <div className="text-sm font-bold leading-none">
                       {platformSettings.hasGitHub ? contributionData.github.stats.currentStreak : 0}
                     </div>
-                    <div className="text-xs text-muted-foreground">GitHub streak</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-none">GitHub Streak</div>
                   </div>
                 </div>
               </Card>
 
-              <Card className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-orange-500/10 rounded-full">
-                    <Target className="h-4 w-4 text-orange-500" />
+              {/* LeetCode Streak */}
+              <Card className="p-3 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:block p-1.5 bg-purple-500/10 rounded-full">
+                    <Code className="h-3.5 w-3.5 text-purple-500" />
                   </div>
-                  <div>
-                    <div className="text-lg font-bold">
+                  <div className="flex-1 min-w-0 sm:text-left text-center">
+                    <div className="text-sm font-bold leading-none">
                       {platformSettings.hasLeetCode ? contributionData.leetcode.stats.solveStreak : 0}
                     </div>
-                    <div className="text-xs text-muted-foreground">LeetCode streak</div>
+                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-none">LeetCode Streak</div>
                   </div>
                 </div>
               </Card>
