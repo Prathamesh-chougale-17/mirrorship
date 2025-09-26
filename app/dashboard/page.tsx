@@ -228,11 +228,13 @@ export default function DashboardPage() {
     }
   };
 
-  const handleManualSync = async () => {
+  const handleManualSync = async (platforms = ["github", "leetcode"]) => {
     try {
       setIsSyncing(true);
       const response = await fetch("/api/sync/manual", {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ platforms }),
       });
 
       if (!response.ok) {
@@ -243,7 +245,6 @@ export default function DashboardPage() {
       const result = await response.json();
       toast.success(result.message || "Sync completed successfully!");
       setLastSyncTime(new Date());
-      
       // Refresh data after sync
       await Promise.all([
         fetchDashboardData(),
@@ -362,7 +363,7 @@ export default function DashboardPage() {
       <DashboardHeader 
         userName={session.user.name}
         isSyncing={isSyncing}
-        onSync={handleManualSync}
+        onSync={() => handleManualSync()}
       />
 
       <CodingDashboard 
@@ -373,7 +374,7 @@ export default function DashboardPage() {
         isSyncing={isSyncing}
         getLeetCodeMotivation={getLeetCodeMotivation}
         getTodaysLeetCodeActivity={getTodaysLeetCodeActivity}
-        onManualSync={handleManualSync}
+        onManualSync={(platforms) => handleManualSync(platforms)}
       />
 
       <StatsOverview 
