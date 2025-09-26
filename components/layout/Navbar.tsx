@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { useSession, signOut } from "@/lib/auth-client";
-import { User, Settings, LogOut, BookOpen, BarChart3, Home, StickyNote, Github } from "lucide-react";
+import { User, Settings, LogOut, BookOpen, BarChart3, Home,  Github, TargetIcon } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -72,7 +72,7 @@ export function Navbar() {
     { href: "/", label: "Home", icon: Home, public: true },
     { href: "/dashboard", label: "Dashboard", icon: BarChart3, public: false },
     { href: "/diary", label: "Diary", icon: BookOpen, public: false },
-    { href: "/notes", label: "Notes", icon: StickyNote, public: false },
+    { href: "/aims", label: "Aims", icon: TargetIcon, public: false },
     { href: "/profile", label: "Profile", icon: User, public: false },
   ];
 
@@ -181,9 +181,9 @@ export function Navbar() {
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <Link href="/notes" className="flex items-center">
-                    <StickyNote className="mr-2 h-4 w-4" />
-                    <span>Notes</span>
+                  <Link href="/aims" className="flex items-center">
+                    <TargetIcon className="mr-2 h-4 w-4" />
+                    <span>Aims</span>
                   </Link>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />

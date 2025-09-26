@@ -7,7 +7,49 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { EditorProvider } from "@/components/ui/kibo-ui/editor";
+import type { Editor, JSONContent } from "@/components/ui/kibo-ui/editor";
+import {
+  EditorBubbleMenu,
+  EditorCharacterCount,
+  EditorClearFormatting,
+  EditorFloatingMenu,
+  EditorFormatBold,
+  EditorFormatCode,
+  EditorFormatItalic,
+  EditorFormatStrike,
+  EditorFormatSubscript,
+  EditorFormatSuperscript,
+  EditorFormatUnderline,
+  EditorLinkSelector,
+  EditorNodeBulletList,
+  EditorNodeCode,
+  EditorNodeHeading1,
+  EditorNodeHeading2,
+  EditorNodeHeading3,
+  EditorNodeOrderedList,
+  EditorNodeQuote,
+  EditorNodeTable,
+  EditorNodeTaskList,
+  EditorNodeText,
+  EditorProvider,
+  EditorSelector,
+  EditorTableColumnAfter,
+  EditorTableColumnBefore,
+  EditorTableColumnDelete,
+  EditorTableColumnMenu,
+  EditorTableDelete,
+  EditorTableFix,
+  EditorTableGlobalMenu,
+  EditorTableHeaderColumnToggle,
+  EditorTableHeaderRowToggle,
+  EditorTableMenu,
+  EditorTableMergeCells,
+  EditorTableRowAfter,
+  EditorTableRowBefore,
+  EditorTableRowDelete,
+  EditorTableRowMenu,
+  EditorTableSplitCell,
+} from "@/components/ui/kibo-ui/editor";
 import { Calendar, Save, Sparkles, BookOpen, Heart } from "lucide-react";
 import { toast } from "sonner";
 
@@ -44,7 +86,7 @@ export default function DiaryPage() {
   const { data: session, isPending } = useSession();
   const [entry, setEntry] = useState<DiaryEntry | null>(null);
   const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState<JSONContent | string>("");
   const [selectedMood, setSelectedMood] = useState<number | undefined>();
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -166,7 +208,7 @@ export default function DiaryPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
+    <div className="container mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -247,31 +289,86 @@ export default function DiaryPage() {
             </CardContent>
           </Card>
 
-          {/* Rich Text Editor */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Your Thoughts</CardTitle>
-              <CardDescription>
-                Write freely about your day, feelings, and experiences
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoading ? (
-                <div className="h-96 flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                <EditorProvider
-                  className="min-h-96 border rounded-lg"
-                  placeholder="Start writing your diary entry..."
-                  content={content}
-                  onUpdate={({ editor }) => {
-                    setContent(editor.getHTML());
-                  }}
-                />
-              )}
-            </CardContent>
-          </Card>
+          {/* Rich Text Editor - Full Width, Rich Features */}
+          <div className="w-full">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Your Thoughts</CardTitle>
+                <CardDescription>
+                  Write freely about your day, feelings, and experiences
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="h-96 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                  </div>
+                ) : (
+                  <EditorProvider
+                    className="h-full w-full overflow-y-auto rounded-lg border bg-background p-4 min-h-96"
+                    content={content}
+                    onUpdate={({ editor }) => {
+                      setContent(editor.getJSON());
+                    }}
+                    placeholder="Start writing your diary entry..."
+                  >
+                    <EditorFloatingMenu>
+                      <EditorNodeHeading1 hideName />
+                      <EditorNodeBulletList hideName />
+                      <EditorNodeQuote hideName />
+                      <EditorNodeCode hideName />
+                      <EditorNodeTable hideName />
+                    </EditorFloatingMenu>
+                    <EditorBubbleMenu>
+                      <EditorSelector title="Text">
+                        <EditorNodeText />
+                        <EditorNodeHeading1 />
+                        <EditorNodeHeading2 />
+                        <EditorNodeHeading3 />
+                        <EditorNodeBulletList />
+                        <EditorNodeOrderedList />
+                        <EditorNodeTaskList />
+                        <EditorNodeQuote />
+                        <EditorNodeCode />
+                      </EditorSelector>
+                      <EditorSelector title="Format">
+                        <EditorFormatBold />
+                        <EditorFormatItalic />
+                        <EditorFormatUnderline />
+                        <EditorFormatStrike />
+                        <EditorFormatCode />
+                        <EditorFormatSuperscript />
+                        <EditorFormatSubscript />
+                      </EditorSelector>
+                      <EditorLinkSelector />
+                      <EditorClearFormatting />
+                    </EditorBubbleMenu>
+                    <EditorTableMenu>
+                      <EditorTableColumnMenu>
+                        <EditorTableColumnBefore />
+                        <EditorTableColumnAfter />
+                        <EditorTableColumnDelete />
+                      </EditorTableColumnMenu>
+                      <EditorTableRowMenu>
+                        <EditorTableRowBefore />
+                        <EditorTableRowAfter />
+                        <EditorTableRowDelete />
+                      </EditorTableRowMenu>
+                      <EditorTableGlobalMenu>
+                        <EditorTableHeaderColumnToggle />
+                        <EditorTableHeaderRowToggle />
+                        <EditorTableDelete />
+                        <EditorTableMergeCells />
+                        <EditorTableSplitCell />
+                        <EditorTableFix />
+                      </EditorTableGlobalMenu>
+                    </EditorTableMenu>
+                    <EditorCharacterCount.Words>Words: </EditorCharacterCount.Words>
+                  </EditorProvider>
+                )}
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Sidebar */}

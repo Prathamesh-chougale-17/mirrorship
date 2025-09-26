@@ -19,7 +19,7 @@ export function QuickActions() {
           </Link>
         </Button>
         <Button variant="outline" size="sm" className="w-full justify-start text-xs" asChild>
-          <Link href="/notes">
+          <Link href="/aims">
             <Target className="h-3 w-3 mr-2" />
             Add Task
           </Link>

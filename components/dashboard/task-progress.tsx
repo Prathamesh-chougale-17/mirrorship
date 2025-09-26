@@ -45,7 +45,7 @@ export function TaskProgress({ kanbanSummary }: TaskProgressProps) {
           className="h-2"
         />
         <Button variant="outline" size="sm" className="w-full text-xs" asChild>
-          <Link href="/notes">Manage Tasks</Link>
+          <Link href="/aims">Manage Tasks</Link>
         </Button>
       </CardContent>
     </Card>

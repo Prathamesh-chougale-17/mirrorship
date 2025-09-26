@@ -367,7 +367,7 @@ export default function ProfilePage() {
               <Button 
                 variant="outline" 
                 className="w-full justify-start"
-                onClick={() => router.push("/notes")}
+                onClick={() => router.push("/aims")}
               >
                 <Activity className="w-4 h-4 mr-2" />
                 Notes
