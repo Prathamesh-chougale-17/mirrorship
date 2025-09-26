@@ -59,6 +59,24 @@ async function fetchFromLeetCodeAPI(
                 }
                 submissionCalendar
               }
+              submitStats {
+                acSubmissionNum {
+                  difficulty
+                  count
+                  submissions
+                }
+                totalSubmissionNum {
+                  difficulty
+                  count
+                  submissions
+                }
+              }
+              recentAcSubmissionList {
+                id
+                title
+                titleSlug
+                timestamp
+              }
             }
           }
         `,
@@ -75,36 +93,63 @@ async function fetchFromLeetCodeAPI(
 
     const data = await response.json();
     
-    if (!data.data?.matchedUser?.userCalendar?.submissionCalendar) {
-      throw new Error('No submission calendar data found');
+    if (!data.data?.matchedUser) {
+      throw new Error('User not found or no data available');
     }
 
-    const submissionCalendar = JSON.parse(data.data.matchedUser.userCalendar.submissionCalendar);
+    const matchedUser = data.data.matchedUser;
     const submissions: Array<Omit<LeetCodeSubmission, '_id' | 'userId' | 'createdAt' | 'updatedAt'>> = [];
 
-    // Convert submission calendar to individual submissions
-    for (const [timestamp, count] of Object.entries(submissionCalendar)) {
-      const submissionDate = new Date(parseInt(timestamp) * 1000);
+    // Process recent submissions if available
+    const recentSubmissions = matchedUser.recentAcSubmissionList || [];
+    recentSubmissions.forEach((submission: any, index: number) => {
+      const submissionDate = new Date(parseInt(submission.timestamp) * 1000);
       
       // Filter by date range
-      if (startDate && submissionDate < startDate) continue;
-      if (endDate && submissionDate > endDate) continue;
+      if (startDate && submissionDate < startDate) return;
+      if (endDate && submissionDate > endDate) return;
 
-      // Create submissions for each day (approximate)
-      const dailyCount = parseInt(count as string);
-      for (let i = 0; i < Math.min(dailyCount, 20); i++) { // Limit to 20 per day
-        submissions.push({
-          submissionId: `${timestamp}-${i}`,
-          problemTitle: `Problem ${Math.floor(Math.random() * 2000) + 1}`,
-          problemSlug: `problem-${Math.floor(Math.random() * 2000) + 1}`,
-          difficulty: ['Easy', 'Medium', 'Hard'][Math.floor(Math.random() * 3)] as 'Easy' | 'Medium' | 'Hard',
-          status: 'Accepted', // Most submissions in calendar are accepted
-          language: ['Python', 'JavaScript', 'Java', 'C++'][Math.floor(Math.random() * 4)],
-          runtime: Math.floor(Math.random() * 500) + 50,
-          memory: Math.floor(Math.random() * 50) + 10,
-          submissionDate: new Date(submissionDate.getTime() + (i * 60000)), // Spread submissions throughout the day
-          problemUrl: `https://leetcode.com/problems/problem-${Math.floor(Math.random() * 2000) + 1}/`
-        });
+      submissions.push({
+        submissionId: submission.id || `recent-${index}`,
+        problemTitle: submission.title,
+        problemSlug: submission.titleSlug,
+        difficulty: 'Easy', // Default since we don't get difficulty from recent submissions
+        status: 'Accepted', // Recent accepted submissions
+        language: 'Unknown', // Not available in this API response
+        runtime: undefined,
+        memory: undefined,
+        submissionDate: submissionDate,
+        problemUrl: `https://leetcode.com/problems/${submission.titleSlug}/`
+      });
+    });
+
+    // If no recent submissions or we need more data, process calendar data
+    const submissionCalendar = matchedUser.userCalendar?.submissionCalendar;
+    if (submissionCalendar && submissions.length === 0) {
+      const calendarData = JSON.parse(submissionCalendar);
+      
+      for (const [timestamp, count] of Object.entries(calendarData)) {
+        const submissionDate = new Date(parseInt(timestamp) * 1000);
+        
+        // Filter by date range
+        if (startDate && submissionDate < startDate) continue;
+        if (endDate && submissionDate > endDate) continue;
+
+        const dailyCount = parseInt(count as string);
+        if (dailyCount > 0) {
+          submissions.push({
+            submissionId: `${timestamp}-daily`,
+            problemTitle: `Daily Activity (${dailyCount} submissions)`,
+            problemSlug: `daily-activity-${timestamp}`,
+            difficulty: 'Easy',
+            status: 'Accepted',
+            language: 'Multiple',
+            runtime: undefined,
+            memory: undefined,
+            submissionDate: submissionDate,
+            problemUrl: `https://leetcode.com/${username}/`
+          });
+        }
       }
     }
 
@@ -180,68 +225,6 @@ async function fetchLeetCodeSubmissions(
   try {
     // Use LeetCode GraphQL API (similar to the cp-api implementation)
     const submissions = await fetchFromLeetCodeAPI(username, startDate, endDate);
-    
-    if (submissions.length > 0) {
-      return submissions;
-    }
-    
-    // Fallback to mock data if API fails
-    const mockSubmissions = [];
-    const current = new Date(startDate || new Date());
-    const end = endDate || new Date();
-    
-    const difficulties = ['Easy', 'Medium', 'Hard'] as const;
-    const statuses = ['Accepted', 'Wrong Answer', 'Time Limit Exceeded'] as const;
-    const languages = ['Python', 'JavaScript', 'Java', 'C++', 'Go'];
-    
-    const problems = [
-      { title: 'Two Sum', slug: 'two-sum' },
-      { title: 'Add Two Numbers', slug: 'add-two-numbers' },
-      { title: 'Longest Substring Without Repeating Characters', slug: 'longest-substring-without-repeating-characters' },
-      { title: 'Median of Two Sorted Arrays', slug: 'median-of-two-sorted-arrays' },
-      { title: 'Longest Palindromic Substring', slug: 'longest-palindromic-substring' },
-      { title: 'Reverse Integer', slug: 'reverse-integer' },
-      { title: 'String to Integer (atoi)', slug: 'string-to-integer-atoi' },
-      { title: 'Regular Expression Matching', slug: 'regular-expression-matching' },
-      { title: 'Container With Most Water', slug: 'container-with-most-water' },
-      { title: 'Integer to Roman', slug: 'integer-to-roman' }
-    ];
-    
-    while (current <= end) {
-      // Random submission activity for demo (more realistic than GitHub)
-      if (Math.random() > 0.85) { // 15% chance of activity per day
-        const submissionCount = Math.floor(Math.random() * 5) + 1; // 1-5 submissions
-        
-        for (let i = 0; i < submissionCount; i++) {
-          const problem = problems[Math.floor(Math.random() * problems.length)];
-          const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
-          const status = statuses[Math.floor(Math.random() * statuses.length)];
-          const language = languages[Math.floor(Math.random() * languages.length)];
-          
-          // Add some random hours/minutes to the date
-          const submissionDate = new Date(current);
-          submissionDate.setHours(
-            Math.floor(Math.random() * 24), 
-            Math.floor(Math.random() * 60)
-          );
-          
-          submissions.push({
-            submissionId: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-            problemTitle: problem.title,
-            problemSlug: problem.slug,
-            difficulty,
-            status,
-            language,
-            runtime: status === 'Accepted' ? Math.floor(Math.random() * 500) + 50 : undefined,
-            memory: status === 'Accepted' ? Math.floor(Math.random() * 50) + 10 : undefined,
-            submissionDate,
-            problemUrl: `https://leetcode.com/problems/${problem.slug}/`
-          });
-        }
-      }
-      
-      current.setDate(current.getDate() + 1);
-    }
     
     return submissions;
 

@@ -132,34 +132,11 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    // This would integrate with GitHub API to fetch commits, PRs, etc.
-    // For now, we'll create a sample activity
-    const today = new Date().toISOString().split('T')[0];
-    
-    const githubActivity = {
-      id: crypto.randomUUID(),
-      userId: user.id,
-      type: "github" as const,
-      title: "Daily GitHub Activity",
-      description: "Commits and contributions",
-      value: Math.floor(Math.random() * 10) + 1, // Sample data
-      unit: "commits",
-      date: today,
-      metadata: {
-        repositories: ["mirrorship", "other-repo"],
-        pullRequests: Math.floor(Math.random() * 3),
-        issuesClosed: Math.floor(Math.random() * 2),
-      },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    const result = await DatabaseService.createActivityEntry(githubActivity);
-
+    // This endpoint should integrate with real GitHub API data
+    // For now, return an error indicating this feature needs implementation
     return NextResponse.json({
-      message: "GitHub activity synced successfully",
-      activity: githubActivity,
-    });
+      error: "GitHub activity sync not yet implemented. Please use the /api/sync/github endpoint instead.",
+    }, { status: 501 });
   } catch (error) {
     console.error("Error syncing GitHub activity:", error);
     return NextResponse.json(

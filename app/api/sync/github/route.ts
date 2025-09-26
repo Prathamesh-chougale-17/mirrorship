@@ -198,31 +198,8 @@ async function fetchGitHubContributions(
   } catch (error) {
     console.error('GitHub API fetch error:', error);
     
-    // Fallback: generate some sample data for demonstration
-    const contributions = [];
-    const current = new Date(startDate || new Date());
-    const end = endDate || new Date();
-    
-    while (current <= end) {
-      // Random commit activity for demo
-      const commitCount = Math.random() > 0.7 ? Math.floor(Math.random() * 10) + 1 : 0;
-      
-      if (commitCount > 0) {
-        contributions.push({
-          date: new Date(current),
-          commitCount,
-          repositories: [{
-            name: `${username}/sample-repo`,
-            commits: commitCount,
-            url: `https://github.com/${username}/sample-repo`
-          }]
-        });
-      }
-      
-      current.setDate(current.getDate() + 1);
-    }
-    
-    return contributions;
+    // Return empty array when API fails - no fallback data
+    return [];
   }
 }
 
