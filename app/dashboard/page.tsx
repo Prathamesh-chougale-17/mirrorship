@@ -20,7 +20,8 @@ import {
   Flame,
   Heart,
   Clock,
-  GitBranch
+  GitBranch,
+  RefreshCw
 } from "lucide-react";
 import { 
   ContributionGraph, 
@@ -88,6 +89,8 @@ export default function DashboardPage() {
     hasLeetCode: false,
     isLoading: true
   });
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
   const [contributionData, setContributionData] = useState({
     github: {
       data: [] as ContributionActivity[],
@@ -199,6 +202,53 @@ export default function DashboardPage() {
     }
   };
 
+  const handleManualSync = async (platforms?: string[]) => {
+    setIsSyncing(true);
+    try {
+      const response = await fetch("/api/sync/manual", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ platforms })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Sync failed");
+      }
+
+      // Show success message
+      const syncedPlatforms = [];
+      if (data.results.github) syncedPlatforms.push(`GitHub (${data.results.github.totalContributions} contributions)`);
+      if (data.results.leetcode) syncedPlatforms.push(`LeetCode (${data.results.leetcode.totalSubmissions} submissions)`);
+      
+      if (syncedPlatforms.length > 0) {
+        toast.success(`Sync completed! Updated: ${syncedPlatforms.join(', ')}`);
+        setLastSyncTime(new Date());
+        
+        // Refresh contribution data
+        await fetchContributionData();
+      } else {
+        toast.warning("No platforms were synced. Please check your integration settings.");
+      }
+
+      // Show any errors that occurred during sync
+      if (data.results.errors && data.results.errors.length > 0) {
+        data.results.errors.forEach((error: string) => {
+          toast.error(error);
+        });
+      }
+
+    } catch (error: any) {
+      console.error("Manual sync error:", error);
+      toast.error(error.message || "Failed to sync data");
+    } finally {
+      setIsSyncing(false);
+    }
+  };
+
   const getMotivationalMessage = () => {
     const totalStreak = contributionData.github.stats.currentStreak + contributionData.leetcode.stats.solveStreak;
     const githubTotal = contributionData.github.stats.totalContributions;
@@ -276,6 +326,46 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
+
+      {/* Sync Status */}
+      {lastSyncTime && (
+        <div className="bg-green-50 dark:bg-green-950/20 rounded-lg p-3 border border-green-200/50 dark:border-green-800/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="p-1 bg-green-500/10 rounded-full">
+                <RefreshCw className="h-4 w-4 text-green-600 dark:text-green-400" />
+              </div>
+              <div className="text-sm">
+                <span className="font-medium text-green-900 dark:text-green-100">
+                  Data synced successfully
+                </span>
+                <span className="text-green-700 dark:text-green-300 ml-2">
+                  {lastSyncTime.toLocaleTimeString()}
+                </span>
+              </div>
+            </div>
+            <Button 
+              size="sm" 
+              variant="outline" 
+              onClick={() => handleManualSync()}
+              disabled={isSyncing}
+              className="text-xs border-green-200 dark:border-green-800"
+            >
+              {isSyncing ? (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                  Syncing...
+                </>
+              ) : (
+                <>
+                  <RefreshCw className="h-3 w-3 mr-1" />
+                  Sync Now
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Contribution Streaks */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -427,12 +517,21 @@ export default function DashboardPage() {
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        onClick={fetchContributionData} 
-                        disabled={contributionsLoading}
+                        onClick={() => handleManualSync(['github'])} 
+                        disabled={isSyncing || contributionsLoading}
                         className="text-xs"
                       >
-                        {contributionsLoading ? "Loading..." : "Refresh"}
-                        <GitBranch className="h-3 w-3 ml-1" />
+                        {isSyncing ? (
+                          <>
+                            <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                            Syncing...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Sync
+                          </>
+                        )}
                       </Button>
                       <Button size="sm" variant="ghost" asChild>
                         <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="text-xs">
@@ -639,12 +738,21 @@ export default function DashboardPage() {
                       <Button 
                         size="sm" 
                         variant="outline" 
-                        onClick={fetchContributionData} 
-                        disabled={contributionsLoading}
+                        onClick={() => handleManualSync(['leetcode'])} 
+                        disabled={isSyncing || contributionsLoading}
                         className="text-xs"
                       >
-                        {contributionsLoading ? "Loading..." : "Refresh"}
-                        <Target className="h-3 w-3 ml-1" />
+                        {isSyncing ? (
+                          <>
+                            <RefreshCw className="h-3 w-3 mr-1 animate-spin" />
+                            Syncing...
+                          </>
+                        ) : (
+                          <>
+                            <RefreshCw className="h-3 w-3 mr-1" />
+                            Sync
+                          </>
+                        )}
                       </Button>
                       <Button size="sm" variant="ghost" asChild>
                         <a href="https://leetcode.com" target="_blank" rel="noopener noreferrer" className="text-xs">
@@ -903,10 +1011,29 @@ export default function DashboardPage() {
                   Add Task
                 </Link>
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="w-full justify-start" 
+                onClick={() => handleManualSync()}
+                disabled={isSyncing}
+              >
+                {isSyncing ? (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                    Syncing All Platforms...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Sync All Data
+                  </>
+                )}
+              </Button>
               <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                 <Link href="/sync">
                   <GitBranch className="h-4 w-4 mr-2" />
-                  {platformSettings.hasGitHub ? "Sync GitHub" : "Connect GitHub"}
+                  Platform Settings
                 </Link>
               </Button>
             </CardContent>

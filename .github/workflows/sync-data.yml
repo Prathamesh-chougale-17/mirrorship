@@ -1,0 +1,73 @@
+name: Sync Platform Data
+
+on:
+  # Run every 6 hours
+  schedule:
+    - cron: '0 */6 * * *'  # At minute 0 past every 6th hour
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      force_sync:
+        description: 'Force sync all users'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  sync-data:
+    name: Sync GitHub and LeetCode Data
+    runs-on: ubuntu-latest
+    
+    environment: production
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          # Install specific dependencies for the sync script
+          npm install mongodb
+
+      - name: Setup environment
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://your-app-domain.com' }}
+        run: |
+          echo "MONGODB_URI=$MONGODB_URI" >> $GITHUB_ENV
+          echo "API_BASE_URL=$API_BASE_URL" >> $GITHUB_ENV
+
+      - name: Run data sync
+        run: node scripts/sync-data.js
+        env:
+          MONGODB_URI: ${{ secrets.MONGODB_URI }}
+          API_BASE_URL: ${{ secrets.API_BASE_URL || 'https://your-app-domain.com' }}
+
+      - name: Report success
+        if: success()
+        run: |
+          echo "✅ Data sync completed successfully at $(date)"
+          
+      - name: Report failure
+        if: failure()
+        run: |
+          echo "❌ Data sync failed at $(date)"
+          # You can add Slack/Discord notifications here if needed
+
+      - name: Send notification on failure (optional)
+        if: failure()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: failure
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }} # Optional: Add Slack webhook for notifications

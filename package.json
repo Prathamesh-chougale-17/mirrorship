@@ -7,7 +7,10 @@
     "build": "next build --turbopack",
     "start": "next start",
     "lint": "biome check",
-    "format": "biome format --write"
+    "format": "biome format --write",
+    "sync": "node scripts/sync-data.js",
+    "sync:github": "node scripts/sync-data.js --platform=github",
+    "sync:leetcode": "node scripts/sync-data.js --platform=leetcode"
   },
   "dependencies": {
     "@ai-sdk/google": "^2.0.16",
