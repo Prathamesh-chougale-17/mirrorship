@@ -84,28 +84,8 @@ export function CodingDashboard({
   onManualSync
 }: CodingDashboardProps) {
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white pb-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-white/10 rounded-full">
-              <Brain className="h-5 w-5" />
-            </div>
-            <div>
-              <CardTitle className="text-xl">Coding Dashboard</CardTitle>
-              <CardDescription className="text-slate-300">GitHub + LeetCode Progress</CardDescription>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            {lastSyncTime && (
-              <Badge variant="secondary" className="bg-green-500/20 text-green-300 border-green-500/30">
-                Synced {lastSyncTime.toLocaleTimeString()}
-              </Badge>
-            )}
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="p-6">
+    <Card className="overflow-hidden p-0">
+      <CardContent className="p-4 md:p-6">
         {(!platformSettings.hasGitHub && !platformSettings.hasLeetCode) ? (
           <div className="text-center py-8">
             <div className="mb-4">
@@ -130,62 +110,57 @@ export function CodingDashboard({
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Unified Stats Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-950/30 dark:to-emerald-950/30 rounded-lg border border-green-200/50 dark:border-green-800/50">
-                <div className="flex items-center justify-center mb-2">
-                  <GitBranch className="w-5 h-5 text-green-600 mr-2" />
-                  <span className="text-sm font-medium text-green-800 dark:text-green-200">GitHub</span>
-                </div>
-                <div className="text-2xl font-bold text-green-900 dark:text-green-100">
+            {/* Compact, Creative Streak Badges */}
+            <div className="flex flex-wrap gap-3 justify-center items-center">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-green-100 to-green-200 dark:from-green-900 dark:to-green-800 border border-green-300 dark:border-green-700 shadow-sm">
+                <GitBranch className="w-4 h-4 text-green-600" />
+                <span className="font-semibold text-green-900 dark:text-green-100">GitHub</span>
+                <span className="text-lg font-bold text-green-800 dark:text-green-200">
                   {platformSettings.hasGitHub ? contributionData.github.stats.currentStreak : '--'}
-                </div>
-                <div className="text-xs text-green-700 dark:text-green-300">day streak</div>
+                </span>
+                <span className="text-xs text-green-700 dark:text-green-300 ml-1">day streak</span>
               </div>
-              
-              <div className="text-center p-4 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-950/30 dark:to-red-950/30 rounded-lg border border-orange-200/50 dark:border-orange-800/50">
-                <div className="flex items-center justify-center mb-2">
-                  <Target className="w-5 h-5 text-orange-600 mr-2" />
-                  <span className="text-sm font-medium text-orange-800 dark:text-orange-200">LeetCode</span>
-                </div>
-                <div className="text-2xl font-bold text-orange-900 dark:text-orange-100">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-orange-100 to-orange-200 dark:from-orange-900 dark:to-orange-800 border border-orange-300 dark:border-orange-700 shadow-sm">
+                <Target className="w-4 h-4 text-orange-600" />
+                <span className="font-semibold text-orange-900 dark:text-orange-100">LeetCode</span>
+                <span className="text-lg font-bold text-orange-800 dark:text-orange-200">
                   {platformSettings.hasLeetCode ? contributionData.leetcode.stats.solveStreak : '--'}
-                </div>
-                <div className="text-xs text-orange-700 dark:text-orange-300">day streak</div>
+                </span>
+                <span className="text-xs text-orange-700 dark:text-orange-300 ml-1">day streak</span>
               </div>
-              
-              <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-indigo-50 dark:from-purple-950/30 dark:to-indigo-950/30 rounded-lg border border-purple-200/50 dark:border-purple-800/50">
-                <div className="flex items-center justify-center mb-2">
-                  <Flame className="w-5 h-5 text-purple-600 mr-2" />
-                  <span className="text-sm font-medium text-purple-800 dark:text-purple-200">Combined</span>
-                </div>
-                <div className="text-2xl font-bold text-purple-900 dark:text-purple-100">
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gradient-to-r from-purple-100 to-indigo-200 dark:from-purple-900 dark:to-indigo-900 border border-purple-300 dark:border-purple-700 shadow-sm">
+                <Flame className="w-4 h-4 text-purple-600" />
+                <span className="font-semibold text-purple-900 dark:text-purple-100">Combined</span>
+                <span className="text-lg font-bold text-purple-800 dark:text-purple-200">
                   {(platformSettings.hasGitHub ? contributionData.github.stats.currentStreak : 0) + 
                    (platformSettings.hasLeetCode ? contributionData.leetcode.stats.solveStreak : 0)}
-                </div>
-                <div className="text-xs text-purple-700 dark:text-purple-300">total days</div>
+                </span>
+                <span className="text-xs text-purple-700 dark:text-purple-300 ml-1">total days</span>
               </div>
+              {lastSyncTime && (
+                <span className="ml-2 text-xs text-muted-foreground">Synced {lastSyncTime.toLocaleTimeString()}</span>
+              )}
             </div>
 
-            {/* Contribution Heatmaps */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Contribution Heatmaps - Larger, More Prominent */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               {platformSettings.hasGitHub && (
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium flex items-center gap-2">
                       <GitBranch className="w-4 h-4 text-green-600" />
                       GitHub Contributions
-                    </h4>
-                    <div className="text-xs text-muted-foreground">
+                    </span>
+                    <span className="text-xs text-muted-foreground">
                       {contributionData.github.stats.thisWeek} this week
-                    </div>
+                    </span>
                   </div>
                   <TooltipProvider>
                     <ContributionGraph 
                       data={contributionData.github.data} 
-                      blockSize={8}
-                      blockMargin={2}
-                      fontSize={10}
+                      blockSize={14}
+                      blockMargin={3}
+                      fontSize={12}
                       className="text-xs"
                     >
                       <ContributionGraphCalendar>
@@ -219,24 +194,23 @@ export function CodingDashboard({
                   </TooltipProvider>
                 </div>
               )}
-
               {platformSettings.hasLeetCode && (
                 <div>
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-medium flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium flex items-center gap-2">
                       <Target className="w-4 h-4 text-orange-600" />
                       LeetCode Problems
-                    </h4>
-                    <div className="text-xs text-muted-foreground">
+                    </span>
+                    <span className="text-xs text-muted-foreground">
                       {contributionData.leetcode.stats.totalSolved} solved
-                    </div>
+                    </span>
                   </div>
                   <TooltipProvider>
                     <ContributionGraph 
                       data={contributionData.leetcode.data} 
-                      blockSize={8}
-                      blockMargin={2}
-                      fontSize={10}
+                      blockSize={14}
+                      blockMargin={3}
+                      fontSize={12}
                       className="text-xs"
                     >
                       <ContributionGraphCalendar>
