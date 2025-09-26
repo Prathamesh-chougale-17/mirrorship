@@ -58,7 +58,7 @@ export async function GET(request: NextRequest) {
       githubActivityMap.set(dateStr, {
         date: dateStr,
         count: totalCount,
-        level: Math.min(4, Math.floor(totalCount / 4) + 1)
+        level: totalCount === 0 ? 0 : Math.min(4, Math.floor((totalCount - 1) / 4) + 1)
       });
     });
 
@@ -76,7 +76,7 @@ export async function GET(request: NextRequest) {
       leetcodeActivityMap.set(dateStr, {
         date: dateStr,
         count,
-        level: Math.min(4, Math.floor(count / 2) + 1)
+        level: count === 0 ? 0 : Math.min(4, Math.floor((count - 1) / 2) + 1)
       });
     });
 

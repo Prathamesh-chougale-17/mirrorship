@@ -472,7 +472,7 @@ export default function DashboardPage() {
                               activity={activity}
                               dayIndex={dayIndex}
                               weekIndex={weekIndex}
-                              className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-green-200 data-[level='2']:fill-green-400 data-[level='3']:fill-green-600 data-[level='4']:fill-green-800 dark:data-[level='1']:fill-green-900 dark:data-[level='2']:fill-green-700 dark:data-[level='3']:fill-green-500 dark:data-[level='4']:fill-green-300"
+                              className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='0']:fill-muted data-[level='1']:fill-green-200 data-[level='2']:fill-green-400 data-[level='3']:fill-green-600 data-[level='4']:fill-green-800 dark:data-[level='0']:fill-muted dark:data-[level='1']:fill-green-900 dark:data-[level='2']:fill-green-700 dark:data-[level='3']:fill-green-500 dark:data-[level='4']:fill-green-300"
                             />
                           </TooltipTrigger>
                           <TooltipContent>
@@ -669,7 +669,7 @@ export default function DashboardPage() {
                                 activity={activity}
                                 dayIndex={dayIndex}
                                 weekIndex={weekIndex}
-                                className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='1']:fill-orange-200 data-[level='2']:fill-orange-400 data-[level='3']:fill-orange-600 data-[level='4']:fill-orange-800 dark:data-[level='1']:fill-orange-900 dark:data-[level='2']:fill-orange-700 dark:data-[level='3']:fill-orange-500 dark:data-[level='4']:fill-orange-300"
+                                className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='0']:fill-muted data-[level='1']:fill-orange-200 data-[level='2']:fill-orange-400 data-[level='3']:fill-orange-600 data-[level='4']:fill-orange-800 dark:data-[level='0']:fill-muted dark:data-[level='1']:fill-orange-900 dark:data-[level='2']:fill-orange-700 dark:data-[level='3']:fill-orange-500 dark:data-[level='4']:fill-orange-300"
                               />
                             </TooltipTrigger>
                             <TooltipContent>
