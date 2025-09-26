@@ -83,6 +83,17 @@ export function CodingDashboard({
   getLeetCodeMotivation,
   onManualSync
 }: CodingDashboardProps) {
+  // Filter contribution data to show only last 9 months
+  const filterLast9Months = (data: ContributionActivity[]): ContributionActivity[] => {
+    const nineMonthsAgo = new Date();
+    nineMonthsAgo.setMonth(nineMonthsAgo.getMonth() - 9);
+    const cutoffDate = nineMonthsAgo.toISOString().split('T')[0];
+    
+    return data.filter(activity => activity.date >= cutoffDate);
+  };
+
+  const filteredGithubData = filterLast9Months(contributionData.github.data);
+  const filteredLeetcodeData = filterLast9Months(contributionData.leetcode.data);
   return (
     <Card className="overflow-hidden p-0">
       <CardContent className="p-4 md:p-6">
@@ -157,7 +168,7 @@ export function CodingDashboard({
                   </div>
                   <TooltipProvider>
                     <ContributionGraph 
-                      data={contributionData.github.data} 
+                      data={filteredGithubData} 
                       blockSize={14}
                       blockMargin={3}
                       fontSize={12}
@@ -207,7 +218,7 @@ export function CodingDashboard({
                   </div>
                   <TooltipProvider>
                     <ContributionGraph 
-                      data={contributionData.leetcode.data} 
+                      data={filteredLeetcodeData} 
                       blockSize={14}
                       blockMargin={3}
                       fontSize={12}

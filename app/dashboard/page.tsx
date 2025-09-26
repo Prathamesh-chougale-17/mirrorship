@@ -184,7 +184,12 @@ export default function DashboardPage() {
   const fetchContributionData = async () => {
     try {
       setContributionsLoading(true);
-      const response = await fetch("/api/contributions");
+      // Fetch data for last 9 months only
+      const nineMonthsAgo = new Date();
+      nineMonthsAgo.setMonth(nineMonthsAgo.getMonth() - 9);
+      const fromDate = nineMonthsAgo.toISOString().split('T')[0];
+      
+      const response = await fetch(`/api/contributions?from=${fromDate}`);
       const data = await response.json();
       
       if (!response.ok) {
