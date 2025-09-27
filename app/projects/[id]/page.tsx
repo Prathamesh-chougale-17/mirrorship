@@ -210,9 +210,9 @@ export default function ProjectDetailPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedNote, setSelectedNote] = useState<ProjectNote | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
 
-  // Form state
+  // Form state for creating new notes
   const [title, setTitle] = useState("");
   const [content, setContent] = useState<JSONContent>({
     type: 'doc',
@@ -225,8 +225,22 @@ export default function ProjectDetailPage() {
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [isCompleted, setIsCompleted] = useState(false);
 
+  // Form state for editing notes
+  const [editingTitle, setEditingTitle] = useState("");
+  const [editingContent, setEditingContent] = useState<JSONContent>({
+    type: 'doc',
+    content: []
+  });
+  const [editingMermaidContent, setEditingMermaidContent] = useState("");
+  const [editingContentMode, setEditingContentMode] = useState<"rich" | "mermaid">("rich");
+  const [editingNoteType, setEditingNoteType] = useState<"brief" | "architecture" | "feature" | "bug" | "idea" | "meeting" | "other">("brief");
+  const [editingTags, setEditingTags] = useState<string[]>([]);
+  const [editingPriority, setEditingPriority] = useState<"low" | "medium" | "high">("medium");
+  const [editingIsCompleted, setEditingIsCompleted] = useState(false);
+
   // Input helpers
   const [tagInput, setTagInput] = useState("");
+  const [editingTagInput, setEditingTagInput] = useState("");
 
   useEffect(() => {
     if (session?.user && projectId) {
@@ -289,9 +303,76 @@ export default function ProjectDetailPage() {
     setTags([]);
     setPriority("medium");
     setIsCompleted(false);
-    setIsEditing(false);
     setSelectedNote(null);
     setTagInput("");
+  };
+
+  const saveEditingNote = async () => {
+    if (!editingTitle.trim()) {
+      toast.error("Please enter a title");
+      return;
+    }
+
+    if (editingContentMode === "mermaid") {
+      if (!editingMermaidContent.trim()) {
+        toast.error("Please enter Mermaid diagram content");
+        return;
+      }
+    } else {
+      if (isContentEmpty(editingContent)) {
+        toast.error("Please enter some content");
+        return;
+      }
+    }
+
+    if (!selectedNote) return;
+
+    try {
+      const contentToSave = editingContentMode === "mermaid" 
+        ? editingMermaidContent.trim()
+        : (typeof editingContent === 'object' ? JSON.stringify(editingContent) : editingContent);
+      
+      const payload = {
+        id: selectedNote.id,
+        projectId,
+        title: editingTitle.trim(),
+        content: contentToSave,
+        type: editingNoteType,
+        tags: editingTags,
+        priority: editingPriority,
+        isCompleted: editingIsCompleted,
+      };
+
+      const response = await fetch("/api/projects/notes", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to update note");
+      }
+
+      toast.success("Note updated successfully!");
+      await fetchNotes();
+      cancelEditing();
+    } catch (error) {
+      console.error("Error updating note:", error);
+      toast.error("Failed to update note");
+    }
+  };
+
+  const addEditingTag = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && editingTagInput.trim() && !editingTags.includes(editingTagInput.trim())) {
+      setEditingTags([...editingTags, editingTagInput.trim()]);
+      setEditingTagInput("");
+    }
+  };
+
+  const removeEditingTag = (tagToRemove: string) => {
+    setEditingTags(editingTags.filter(tag => tag !== tagToRemove));
   };
 
   const openCreateDialog = (mode: "rich" | "mermaid" = "rich") => {
@@ -303,8 +384,8 @@ export default function ProjectDetailPage() {
     setIsDialogOpen(true);
   };
 
-  const openEditDialog = (note: ProjectNote) => {
-    setTitle(note.title);
+  const startEditingNote = (note: ProjectNote) => {
+    setEditingTitle(note.title);
     
     // Check if content is Mermaid diagram - improved detection
     const contentStr = typeof note.content === 'string' ? note.content : JSON.stringify(note.content);
@@ -322,13 +403,13 @@ export default function ProjectDetailPage() {
       });
     
     if (isMermaidContent) {
-      setContentMode("mermaid");
-      setMermaidContent(note.content as string);
-      setContent({ type: 'doc', content: [] });
+      setEditingContentMode("mermaid");
+      setEditingMermaidContent(note.content as string);
+      setEditingContent({ type: 'doc', content: [] });
     } else {
       // Default to rich text mode
-      setContentMode("rich");
-      setMermaidContent("");
+      setEditingContentMode("rich");
+      setEditingMermaidContent("");
       let parsedContent;
       try {
         parsedContent = typeof note.content === 'string' ? JSON.parse(note.content) : note.content;
@@ -342,16 +423,22 @@ export default function ProjectDetailPage() {
           }]
         };
       }
-      setContent(parsedContent);
+      setEditingContent(parsedContent);
     }
     
-    setNoteType(note.type);
-    setTags(note.tags || []);
-    setPriority(note.priority);
-    setIsCompleted(note.isCompleted);
+    setEditingNoteType(note.type);
+    setEditingTags(note.tags || []);
+    setEditingPriority(note.priority);
+    setEditingIsCompleted(note.isCompleted);
     setSelectedNote(note);
-    setIsEditing(true);
-    setIsDialogOpen(true);
+    setEditingNoteId(note.id);
+    setEditingTagInput("");
+  };
+
+  const cancelEditing = () => {
+    setEditingNoteId(null);
+    setSelectedNote(null);
+    setEditingTagInput("");
   };
 
   const handleSave = async () => {
@@ -388,20 +475,11 @@ export default function ProjectDetailPage() {
         isCompleted,
       };
 
-      let response;
-      if (isEditing && selectedNote) {
-        response = await fetch("/api/projects/notes", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: selectedNote.id, ...payload }),
-        });
-      } else {
-        response = await fetch("/api/projects/notes", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
-      }
+      const response = await fetch("/api/projects/notes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
 
       const data = await response.json();
 
@@ -409,7 +487,7 @@ export default function ProjectDetailPage() {
         throw new Error(data.error || "Failed to save note");
       }
 
-      toast.success(isEditing ? "Note updated!" : "Note created!");
+      toast.success("Note created!");
       setIsDialogOpen(false);
       resetForm();
       fetchNotes();
@@ -660,9 +738,9 @@ export default function ProjectDetailPage() {
           </div>
           <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{isEditing ? "Edit Note" : "Create New Note"}</DialogTitle>
+              <DialogTitle>Create New Note</DialogTitle>
               <DialogDescription>
-                {isEditing ? "Update your project note" : "Add a new note to document your project insights"}
+                Add a new note to document your project insights
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -923,7 +1001,7 @@ sequenceDiagram
 
               <div className="flex gap-2">
                 <Button onClick={handleSave} disabled={isCreating} className="flex-1">
-                  {isCreating ? "Saving..." : isEditing ? "Update" : "Create"}
+                  {isCreating ? "Saving..." : "Create"}
                 </Button>
                 <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancel
@@ -976,63 +1054,231 @@ sequenceDiagram
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-semibold mb-2">{note.title}</h3>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge className={`text-xs ${noteTypeColors[note.type]}`}>
-                        <NoteIcon className="h-3 w-3 mr-1" />
-                        {note.type}
-                      </Badge>
-                      <Badge className={`text-xs ${priorityColors[note.priority]}`}>
-                        {note.priority}
-                      </Badge>
-                      {note.isCompleted && (
-                        <Badge variant="outline" className="text-xs">
-                          <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
-                          Completed
-                        </Badge>
-                      )}
-                      {isMermaidContent && (
-                        <Badge variant="secondary" className="text-xs">
-                          <Code2 className="h-3 w-3 mr-1" />
-                          Diagram
-                        </Badge>
-                      )}
-                      {note.tags?.map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
+                    {editingNoteId === note.id ? (
+                      <div className="space-y-3">
+                        <Input
+                          value={editingTitle}
+                          onChange={(e) => setEditingTitle(e.target.value)}
+                          placeholder="Note title"
+                          className="text-xl font-semibold"
+                        />
+                        <div className="grid grid-cols-2 gap-3">
+                          <Select value={editingNoteType} onValueChange={(value: any) => setEditingNoteType(value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Note type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="brief">Brief</SelectItem>
+                              <SelectItem value="architecture">Architecture</SelectItem>
+                              <SelectItem value="feature">Feature</SelectItem>
+                              <SelectItem value="bug">Bug Report</SelectItem>
+                              <SelectItem value="idea">Idea</SelectItem>
+                              <SelectItem value="meeting">Meeting</SelectItem>
+                              <SelectItem value="other">Other</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Select value={editingPriority} onValueChange={(value: any) => setEditingPriority(value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low Priority</SelectItem>
+                              <SelectItem value="medium">Medium Priority</SelectItem>
+                              <SelectItem value="high">High Priority</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={`completed-${note.id}`}
+                            checked={editingIsCompleted}
+                            onChange={(e) => setEditingIsCompleted(e.target.checked)}
+                            className="rounded"
+                          />
+                          <label htmlFor={`completed-${note.id}`} className="text-sm">Mark as completed</label>
+                        </div>
+                        <div>
+                          <div className="flex flex-wrap gap-2 mb-2">
+                            {editingTags.map((tag) => (
+                              <Badge key={tag} variant="outline" className="text-xs">
+                                {tag}
+                                <button
+                                  onClick={() => removeEditingTag(tag)}
+                                  className="ml-2 text-red-500 hover:text-red-700"
+                                >
+                                  ×
+                                </button>
+                              </Badge>
+                            ))}
+                          </div>
+                          <Input
+                            value={editingTagInput}
+                            onChange={(e) => setEditingTagInput(e.target.value)}
+                            onKeyDown={addEditingTag}
+                            placeholder="Add tags (press Enter)"
+                            className="text-sm"
+                          />
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-xl font-semibold mb-2">{note.title}</h3>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <Badge className={`text-xs ${noteTypeColors[note.type]}`}>
+                            <NoteIcon className="h-3 w-3 mr-1" />
+                            {note.type}
+                          </Badge>
+                          <Badge className={`text-xs ${priorityColors[note.priority]}`}>
+                            {note.priority}
+                          </Badge>
+                          {note.isCompleted && (
+                            <Badge variant="outline" className="text-xs">
+                              <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                              Completed
+                            </Badge>
+                          )}
+                          {isMermaidContent && (
+                            <Badge variant="secondary" className="text-xs">
+                              <Code2 className="h-3 w-3 mr-1" />
+                              Diagram
+                            </Badge>
+                          )}
+                          {note.tags?.map((tag) => (
+                            <Badge key={tag} variant="outline" className="text-xs">
+                              {tag}
+                            </Badge>
+                          ))}
+                        </div>
+                      </>
+                    )}
                   </div>
                   <div className="flex items-center gap-2 ml-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openEditDialog(note)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDelete(note.id)}
-                      className="text-red-500 hover:text-red-700"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    {editingNoteId === note.id ? (
+                      <>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={saveEditingNote}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={cancelEditing}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => startEditingNote(note)}
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDelete(note.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
                 
                 {/* Content */}
                 <div className="prose prose-sm max-w-none dark:prose-invert">
-                  {isMermaidContent ? (
-                    <div className="bg-muted/50 rounded-lg p-4 my-4">
-                      <MermaidDiagram chart={note.content as string} />
+                  {editingNoteId === note.id ? (
+                    <div className="space-y-4">
+                      <div className="flex gap-2">
+                        <Button
+                          variant={editingContentMode === "rich" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setEditingContentMode("rich")}
+                        >
+                          Rich Text
+                        </Button>
+                        <Button
+                          variant={editingContentMode === "mermaid" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setEditingContentMode("mermaid")}
+                        >
+                          Mermaid
+                        </Button>
+                      </div>
+                      {editingContentMode === "rich" ? (
+                        <div className="border rounded-lg">
+                          <EditorProvider
+                            content={editingContent}
+                            onUpdate={({ editor }) => setEditingContent(editor.getJSON())}
+                            className="min-h-[200px] prose prose-sm max-w-none dark:prose-invert p-4"
+                          >
+                            <EditorBubbleMenu>
+                              <EditorSelector title="Text Style" />
+                              <EditorFormatBold />
+                              <EditorFormatItalic />
+                              <EditorFormatStrike />
+                              <EditorFormatCode />
+                              <EditorLinkSelector />
+                            </EditorBubbleMenu>
+                            <EditorFloatingMenu>
+                              <EditorSelector title="Insert" />
+                              <EditorNodeHeading1 />
+                              <EditorNodeHeading2 />
+                              <EditorNodeHeading3 />
+                              <EditorNodeBulletList />
+                              <EditorNodeOrderedList />
+                              <EditorNodeQuote />
+                              <EditorNodeCode />
+                            </EditorFloatingMenu>
+                          </EditorProvider>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Mermaid Code</label>
+                            <Textarea
+                              placeholder="Enter Mermaid diagram code..."
+                              value={editingMermaidContent}
+                              onChange={(e) => setEditingMermaidContent(e.target.value)}
+                              rows={8}
+                              className="font-mono text-sm"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Preview</label>
+                            <div className="border rounded-lg p-4 bg-background min-h-[200px]">
+                              {editingMermaidContent.trim() ? (
+                                <MermaidDiagram chart={editingMermaidContent} />
+                              ) : (
+                                <div className="flex items-center justify-center h-full text-muted-foreground">
+                                  Enter Mermaid code to see preview
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
-                    <div className="text-muted-foreground">
-                      <EditorContentDisplay content={note.content} />
-                    </div>
+                    <>
+                      {isMermaidContent ? (
+                        <div className="bg-muted/50 rounded-lg p-4 my-4">
+                          <MermaidDiagram chart={note.content as string} />
+                        </div>
+                      ) : (
+                        <div className="text-muted-foreground">
+                          <EditorContentDisplay content={note.content} />
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
                 
