@@ -74,6 +74,9 @@ export function Navbar() {
     { href: "/diary", label: "Diary", icon: BookOpen, public: false },
     { href: "/aims", label: "Aims", icon: TargetIcon, public: false },
     { href: "/profile", label: "Profile", icon: User, public: false },
+    {
+      href: "/projects", label: "Projects", icon: Github, public: false
+    }
   ];
 
   const isActive = (path: string) => pathname === path;
