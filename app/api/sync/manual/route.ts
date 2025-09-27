@@ -262,18 +262,17 @@ async function syncLeetCodeData(userId: string, username: string) {
   const mediumCount = submitStats.find((s: any) => s.difficulty === 'Medium')?.count || 0;
   const hardCount = submitStats.find((s: any) => s.difficulty === 'Hard')?.count || 0;
   
-  // Create a minimal submission entry to maintain the sync record
-  const submissions = [{
-    submissionId: `sync-${Date.now()}`,
-    problemTitle: `LeetCode Profile Sync`,
-    problemSlug: 'profile-sync',
-    submissionDate: new Date(),
-    status: "Accepted" as "Accepted",
-    difficulty: 'Easy' as "Easy",
-    language: 'N/A'
-  }];
+  // Don't create fake submissions - just update platform settings with latest stats
+  await DatabaseService.updateUserPlatformSettings(userId, {
+    leetcode: {
+      username: username,
+      lastSyncDate: new Date(),
+      syncEnabled: true
+    }
+  });
 
-  await DatabaseService.saveLeetCodeSubmissions(userId, submissions);
+  // Note: We don't save fake submissions since LeetCode API doesn't provide recent submission data
+  // Real submissions need to be manually added or tracked through other means
   
   return {
     totalSubmissions: totalSolved,
