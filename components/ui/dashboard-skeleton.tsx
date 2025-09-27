@@ -1,26 +1,31 @@
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function DashboardHeaderSkeleton() {
   return (
     <div className="flex items-center justify-between">
       <div>
-        <Skeleton className="h-8 w-48 mb-2" />
-        <Skeleton className="h-4 w-32" />
+        <Skeleton className="h-8 w-64 mb-2" />
+        <Skeleton className="h-4 w-40" />
       </div>
-      <Skeleton className="h-10 w-24" />
+      <div className="flex gap-2">
+        <Skeleton className="h-8 w-8 rounded" />
+        <Skeleton className="h-8 w-24 rounded" />
+      </div>
     </div>
   );
 }
 
 export function StatsRowSkeleton() {
   return (
-    <div className="grid grid-cols-5 gap-3 mb-4">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <Card key={i} className="p-3">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Card key={i} className="p-3 hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center gap-2">
-            <Skeleton className="h-7 w-7 rounded-full" />
-            <div className="flex-1">
+            <div className="hidden sm:block">
+              <Skeleton className="h-7 w-7 rounded-full" />
+            </div>
+            <div className="flex-1 min-w-0 sm:text-left text-center">
               <Skeleton className="h-4 w-8 mb-1" />
               <Skeleton className="h-3 w-16" />
             </div>
@@ -41,23 +46,13 @@ export function ContributionHeatmapSkeleton() {
         </div>
         <Skeleton className="h-3 w-20" />
       </div>
-      <div className="space-y-2">
-        {/* Week labels */}
-        <div className="flex gap-1">
-          <Skeleton className="h-3 w-6" />
-          <div className="flex-1 grid grid-cols-53 gap-1">
-            {Array.from({ length: 53 }).map((_, i) => (
-              <Skeleton key={i} className="h-3 w-3" />
-            ))}
-          </div>
-        </div>
-        {/* Days grid */}
+      {/* Compact 9-month heatmap skeleton */}
+      <div className="space-y-1">
         {Array.from({ length: 7 }).map((_, dayIndex) => (
           <div key={dayIndex} className="flex gap-1">
-            <Skeleton className="h-3 w-6" />
-            <div className="flex-1 grid grid-cols-53 gap-1">
-              {Array.from({ length: 53 }).map((_, weekIndex) => (
-                <Skeleton key={weekIndex} className="h-3 w-3" />
+            <div className="flex-1 grid grid-cols-39 gap-1">
+              {Array.from({ length: 39 }).map((_, weekIndex) => (
+                <Skeleton key={weekIndex} className="h-2 w-2 rounded-sm" />
               ))}
             </div>
           </div>
@@ -68,7 +63,7 @@ export function ContributionHeatmapSkeleton() {
         <div className="flex items-center gap-1">
           <Skeleton className="h-3 w-12" />
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-3 w-3" />
+            <Skeleton key={i} className="h-2 w-2 rounded-sm" />
           ))}
           <Skeleton className="h-3 w-8" />
         </div>
@@ -82,34 +77,79 @@ export function CodingDashboardSkeleton() {
     <Card className="overflow-hidden p-0">
       <CardContent className="p-4 md:p-6">
         <div className="space-y-6">
-          {/* Stats Row Skeleton */}
-          <StatsRowSkeleton />
+        {/* LeetCode Motivation Section */}
+          <div className="p-4 rounded-lg border bg-yellow-50 dark:bg-yellow-950/30 border-yellow-200 dark:border-yellow-800">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <Skeleton className="h-5 w-72 mb-2" />
+                <Skeleton className="h-4 w-80" />
+              </div>
+              <div className="flex items-center gap-2 ml-4">
+                <Skeleton className="h-6 w-24" />
+                <Skeleton className="h-8 w-32" />
+              </div>
+            </div>
+          </div>
+          {/* Stats Row Skeleton - 6 cards including YouTube */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+            {Array.from({ length: 7 }).map((_, i) => (
+              <Card key={i} className="p-3 hover:shadow-md transition-shadow duration-200">
+                <div className="flex items-center gap-2">
+                  <div className="hidden sm:block">
+                    <Skeleton className="h-7 w-7 rounded-full" />
+                  </div>
+                  <div className="flex-1 min-w-0 sm:text-left text-center">
+                    <Skeleton className="h-4 w-8 mb-1" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
           
           {/* Sync Status */}
-          <div className="text-center">
+          <div className="text-center mb-4">
             <Skeleton className="h-3 w-40 mx-auto" />
           </div>
           
-          {/* Heatmaps Grid */}
+          {/* Heatmaps Grid - 2 platforms per row on large screens to match actual layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <ContributionHeatmapSkeleton />
-            <ContributionHeatmapSkeleton />
-            <ContributionHeatmapSkeleton />
+            {Array.from({ length: 3 }).map((_, i) => (
+              <div key={i}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="h-4 w-4" />
+                    <Skeleton className="h-4 w-36" />
+                  </div>
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                {/* Heatmap skeleton matching actual blockSize and layout */}
+                <div className="space-y-1">
+                  {Array.from({ length: 7 }).map((_, dayIndex) => (
+                    <div key={dayIndex} className="flex gap-1">
+                      <div className="flex-1 grid grid-cols-39 gap-1">
+                        {Array.from({ length: 39 }).map((_, weekIndex) => (
+                          <Skeleton key={weekIndex} className="h-3.5 w-3.5 rounded-sm" />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="flex items-center justify-between mt-2">
+                  <Skeleton className="h-3 w-16" />
+                  <div className="flex items-center gap-1">
+                    <Skeleton className="h-3 w-12" />
+                    {Array.from({ length: 5 }).map((_, k) => (
+                      <Skeleton key={k} className="h-3 w-3 rounded-sm" />
+                    ))}
+                    <Skeleton className="h-3 w-8" />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
           
-          {/* Motivation Section */}
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <Skeleton className="h-5 w-80 mb-2" />
-                <Skeleton className="h-4 w-96" />
-              </div>
-              <div className="flex items-center gap-2 ml-4">
-                <Skeleton className="h-6 w-20" />
-                <Skeleton className="h-8 w-24" />
-              </div>
-            </div>
-          </Card>
+          
         </div>
       </CardContent>
     </Card>
@@ -120,23 +160,23 @@ export function RecentEntriesSkeleton() {
   return (
     <Card>
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <CardTitle className="flex items-center justify-between">
+          <span className="flex items-center gap-2">
             <Skeleton className="h-5 w-5" />
-            <Skeleton className="h-6 w-32" />
-          </div>
-          <Skeleton className="h-8 w-20" />
-        </div>
+            <Skeleton className="h-5 w-32" />
+          </span>
+          <Skeleton className="h-6 w-16" />
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
-              <div className="flex-1">
-                <Skeleton className="h-5 w-48 mb-1" />
-                <Skeleton className="h-4 w-32" />
+            <div key={i} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+              <div className="flex-1 min-w-0">
+                <Skeleton className="h-4 w-48 mb-1" />
+                <Skeleton className="h-3 w-32" />
               </div>
-              <Skeleton className="h-6 w-6" />
+              <Skeleton className="h-6 w-6 rounded-full ml-3" />
             </div>
           ))}
         </div>
@@ -148,30 +188,30 @@ export function RecentEntriesSkeleton() {
 export function TrendsChartSkeleton() {
   return (
     <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <Skeleton className="h-6 w-32" />
-          <div className="flex gap-2">
-            <Skeleton className="h-8 w-16" />
-            <Skeleton className="h-8 w-20" />
-          </div>
+      <CardHeader className="pb-4">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-5 w-5" />
+          <Skeleton className="h-6 w-48" />
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {/* Chart area */}
-          <Skeleton className="h-64 w-full" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Mood Trend Chart */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+            <Skeleton className="h-[150px] w-full rounded" />
+          </div>
           
-          {/* Legend */}
-          <div className="flex justify-center gap-4">
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-3 w-3" />
-              <Skeleton className="h-4 w-12" />
+          {/* Writing Volume Chart */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Skeleton className="h-4 w-4" />
+              <Skeleton className="h-4 w-24" />
             </div>
-            <div className="flex items-center gap-2">
-              <Skeleton className="h-3 w-3" />
-              <Skeleton className="h-4 w-16" />
-            </div>
+            <Skeleton className="h-[150px] w-full rounded" />
           </div>
         </div>
       </CardContent>
