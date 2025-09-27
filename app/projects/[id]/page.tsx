@@ -37,6 +37,7 @@ import React from "react";
 import { toast } from "sonner";
 import { JSONContent } from "@tiptap/react";
 import MermaidDiagram from "@/components/ui/mermaid-diagram";
+import EditorContentDisplay from "@/components/ui/editor-content-display";
 import {
   EditorBubbleMenu,
   EditorCharacterCount,
@@ -1030,23 +1031,7 @@ sequenceDiagram
                     </div>
                   ) : (
                     <div className="text-muted-foreground">
-                      {(() => {
-                        let displayText = '';
-                        if (typeof note.content === 'string') {
-                          try {
-                            // Try to parse as JSON content
-                            const parsed = JSON.parse(note.content);
-                            displayText = extractTextFromContent(parsed);
-                          } catch {
-                            // If parsing fails, use as plain text
-                            displayText = note.content;
-                          }
-                        } else {
-                          displayText = extractTextFromContent(note.content);
-                        }
-                        
-                        return displayText || "No content available";
-                      })()}
+                      <EditorContentDisplay content={note.content} />
                     </div>
                   )}
                 </div>
