@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { 
   ArrowLeft, 
@@ -241,6 +242,10 @@ export default function ProjectDetailPage() {
   // Input helpers
   const [tagInput, setTagInput] = useState("");
   const [editingTagInput, setEditingTagInput] = useState("");
+  
+  // Alert dialog state for deletion
+  const [isDeleteAlertOpen, setIsDeleteAlertOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (session?.user && projectId) {
@@ -499,11 +504,16 @@ export default function ProjectDetailPage() {
     }
   };
 
-  const handleDelete = async (noteId: string) => {
-    if (!confirm("Are you sure you want to delete this note?")) return;
+  const openDeleteAlert = (noteId: string) => {
+    setNoteToDelete(noteId);
+    setIsDeleteAlertOpen(true);
+  };
+
+  const handleDelete = async () => {
+    if (!noteToDelete) return;
 
     try {
-      const response = await fetch(`/api/projects/notes?id=${noteId}`, {
+      const response = await fetch(`/api/projects/notes?id=${noteToDelete}`, {
         method: "DELETE",
       });
 
@@ -514,6 +524,8 @@ export default function ProjectDetailPage() {
 
       toast.success("Note deleted!");
       fetchNotes();
+      setIsDeleteAlertOpen(false);
+      setNoteToDelete(null);
     } catch (error) {
       console.error("Error deleting note:", error);
       toast.error(error instanceof Error ? error.message : "Failed to delete note");
@@ -1183,7 +1195,7 @@ sequenceDiagram
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => handleDelete(note.id)}
+                          onClick={() => openDeleteAlert(note.id)}
                           className="text-red-500 hover:text-red-700"
                         >
                           <Trash2 className="h-4 w-4" />
@@ -1294,6 +1306,28 @@ sequenceDiagram
           })}
         </div>
       )}
+
+      {/* Delete Confirmation Alert Dialog */}
+      <AlertDialog open={isDeleteAlertOpen} onOpenChange={setIsDeleteAlertOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the note
+              and remove all its content from your project.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setNoteToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
