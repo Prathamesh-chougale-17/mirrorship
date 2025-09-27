@@ -47,7 +47,9 @@ import {
   LeetCodeSubmission,
   UserPlatformSettings,
   YouTubeUpload,
-  YouTubeChannel
+  YouTubeChannel,
+  Project,
+  ProjectNote
 } from './models';
 import { ObjectId } from 'mongodb';
 

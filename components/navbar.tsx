@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { User, LogOut, Home, LayoutDashboard, Menu, X } from "lucide-react";
+import { User, LogOut, Home, LayoutDashboard, Menu, X, FolderOpen } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
@@ -58,6 +58,12 @@ export function Navbar() {
       name: "Dashboard",
       href: "/dashboard",
       icon: LayoutDashboard,
+      public: false,
+    },
+    {
+      name: "Projects",
+      href: "/projects",
+      icon: FolderOpen,
       public: false,
     },
   ];

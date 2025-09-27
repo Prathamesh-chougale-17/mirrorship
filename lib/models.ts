@@ -222,6 +222,47 @@ export interface UserPlatformSettings {
   updatedAt: Date;
 }
 
+// Project Model
+export interface Project {
+  _id?: ObjectId;
+  id: string;
+  userId: string;
+  title: string;
+  description: string;
+  type: "template" | "product";
+  techStack: string[];
+  githubUrl?: string;
+  liveUrl?: string;
+  imageUrl?: string;
+  status: "planning" | "in-progress" | "completed" | "on-hold";
+  priority: "low" | "medium" | "high";
+  startDate?: Date;
+  completionDate?: Date;
+  tags: string[];
+  features: string[];
+  challenges?: string;
+  learnings?: string;
+  isPublic: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Project Note Model (for project briefs and understanding)
+export interface ProjectNote {
+  _id?: ObjectId;
+  id: string;
+  userId: string;
+  projectId: string;
+  title: string;
+  content: string; // Rich text JSON from Tiptap
+  type: "brief" | "architecture" | "feature" | "bug" | "idea" | "meeting" | "other";
+  tags: string[];
+  priority: "low" | "medium" | "high";
+  isCompleted: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Collection names
 export const COLLECTIONS = {
   USERS: "users",
@@ -234,5 +275,7 @@ export const COLLECTIONS = {
   LEETCODE_SUBMISSIONS: "leetcode_submissions",
   USER_PLATFORM_SETTINGS: "user_platform_settings",
   YOUTUBE_UPLOADS: "youtube_uploads",
-  YOUTUBE_CHANNELS: "youtube_channels"
+  YOUTUBE_CHANNELS: "youtube_channels",
+  PROJECTS: "projects",
+  PROJECT_NOTES: "project_notes"
 } as const;

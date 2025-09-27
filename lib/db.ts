@@ -1,5 +1,5 @@
 import client from "./mongodb";
-import { COLLECTIONS, DiaryEntry, KanbanNote, ActivityEntry, AISummary, UserPreferences } from "./models";
+import { COLLECTIONS, DiaryEntry, KanbanNote, ActivityEntry, AISummary, UserPreferences, Project, ProjectNote } from "./models";
 import { ObjectId } from "mongodb";
 
 // Generic database operations
@@ -336,5 +336,149 @@ export class DatabaseService {
       done: doneCount,
       total: totalCount
     };
+  }
+
+  // Project operations
+  static async createProject(project: Omit<Project, "_id">) {
+    const db = await this.getDb();
+    const result = await db.collection<Project>(COLLECTIONS.PROJECTS).insertOne({
+      ...project,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    return result;
+  }
+
+  static async getProjects(userId: string) {
+    const db = await this.getDb();
+    const projects = await db
+      .collection<Project>(COLLECTIONS.PROJECTS)
+      .find({ userId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return projects;
+  }
+
+  static async getProjectById(id: string, userId: string) {
+    const db = await this.getDb();
+    const project = await db
+      .collection<Project>(COLLECTIONS.PROJECTS)
+      .findOne({ id, userId });
+    return project;
+  }
+
+  static async updateProject(id: string, userId: string, updates: Partial<Project>) {
+    const db = await this.getDb();
+    const result = await db
+      .collection<Project>(COLLECTIONS.PROJECTS)
+      .updateOne(
+        { id, userId },
+        { 
+          $set: { 
+            ...updates, 
+            updatedAt: new Date() 
+          } 
+        }
+      );
+    return result;
+  }
+
+  static async deleteProject(id: string, userId: string) {
+    const db = await this.getDb();
+    
+    // Delete all project notes first
+    await db.collection<ProjectNote>(COLLECTIONS.PROJECT_NOTES).deleteMany({ 
+      projectId: id, 
+      userId 
+    });
+    
+    // Delete the project
+    const result = await db
+      .collection<Project>(COLLECTIONS.PROJECTS)
+      .deleteOne({ id, userId });
+    return result;
+  }
+
+  // Project Note operations
+  static async createProjectNote(note: Omit<ProjectNote, "_id">) {
+    const db = await this.getDb();
+    const result = await db.collection<ProjectNote>(COLLECTIONS.PROJECT_NOTES).insertOne({
+      ...note,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    return result;
+  }
+
+  static async getProjectNotes(userId: string, projectId: string) {
+    const db = await this.getDb();
+    const notes = await db
+      .collection<ProjectNote>(COLLECTIONS.PROJECT_NOTES)
+      .find({ userId, projectId })
+      .sort({ createdAt: -1 })
+      .toArray();
+    return notes;
+  }
+
+  static async getProjectNoteById(id: string, userId: string) {
+    const db = await this.getDb();
+    const note = await db
+      .collection<ProjectNote>(COLLECTIONS.PROJECT_NOTES)
+      .findOne({ id, userId });
+    return note;
+  }
+
+  static async updateProjectNote(id: string, userId: string, updates: Partial<ProjectNote>) {
+    const db = await this.getDb();
+    const result = await db
+      .collection<ProjectNote>(COLLECTIONS.PROJECT_NOTES)
+      .updateOne(
+        { id, userId },
+        { 
+          $set: { 
+            ...updates, 
+            updatedAt: new Date() 
+          } 
+        }
+      );
+    return result;
+  }
+
+  static async deleteProjectNote(id: string, userId: string) {
+    const db = await this.getDb();
+    const result = await db
+      .collection<ProjectNote>(COLLECTIONS.PROJECT_NOTES)
+      .deleteOne({ id, userId });
+    return result;
+  }
+
+  static async getProjectsWithNoteCounts(userId: string) {
+    const db = await this.getDb();
+    const projects = await db
+      .collection<Project>(COLLECTIONS.PROJECTS)
+      .aggregate([
+        { $match: { userId } },
+        {
+          $lookup: {
+            from: COLLECTIONS.PROJECT_NOTES,
+            localField: "id",
+            foreignField: "projectId",
+            as: "notes"
+          }
+        },
+        {
+          $addFields: {
+            noteCount: { $size: "$notes" }
+          }
+        },
+        {
+          $project: {
+            notes: 0 // Remove the notes array from output
+          }
+        },
+        { $sort: { createdAt: -1 } }
+      ])
+      .toArray();
+    return projects;
   }
 }
