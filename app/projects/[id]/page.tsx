@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   ArrowLeft, 
   Github, 
@@ -35,6 +36,7 @@ import {
 import React from "react";
 import { toast } from "sonner";
 import { JSONContent } from "@tiptap/react";
+import MermaidDiagram from "@/components/ui/mermaid-diagram";
 import {
   EditorBubbleMenu,
   EditorCharacterCount,
@@ -215,6 +217,8 @@ export default function ProjectDetailPage() {
     type: 'doc',
     content: []
   });
+  const [mermaidContent, setMermaidContent] = useState("");
+  const [contentMode, setContentMode] = useState<"rich" | "mermaid">("rich");
   const [noteType, setNoteType] = useState<"brief" | "architecture" | "feature" | "bug" | "idea" | "meeting" | "other">("brief");
   const [tags, setTags] = useState<string[]>([]);
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
@@ -278,6 +282,8 @@ export default function ProjectDetailPage() {
       type: 'doc',
       content: []
     });
+    setMermaidContent("");
+    setContentMode("rich");
     setNoteType("brief");
     setTags([]);
     setPriority("medium");
@@ -287,28 +293,57 @@ export default function ProjectDetailPage() {
     setTagInput("");
   };
 
-  const openCreateDialog = () => {
+  const openCreateDialog = (mode: "rich" | "mermaid" = "rich") => {
     resetForm();
+    setContentMode(mode);
+    if (mode === "mermaid") {
+      setMermaidContent("graph TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Process]\n    B -->|No| D[End]\n    C --> D");
+    }
     setIsDialogOpen(true);
   };
 
   const openEditDialog = (note: ProjectNote) => {
     setTitle(note.title);
     
-    let parsedContent;
-    try {
-      parsedContent = typeof note.content === 'string' ? JSON.parse(note.content) : note.content;
-    } catch {
-      parsedContent = {
-        type: 'doc',
-        content: [{
-          type: 'paragraph',
-          content: [{ type: 'text', text: note.content }]
-        }]
-      };
+    // Check if content is Mermaid diagram - improved detection
+    const contentStr = typeof note.content === 'string' ? note.content : JSON.stringify(note.content);
+    const mermaidKeywords = [
+      'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram', 
+      'journey', 'gantt', 'pie', 'gitgraph', 'erDiagram', 'mindmap', 'timeline',
+      'sankey', 'block-beta', 'packet-beta'
+    ];
+    
+    // More robust Mermaid detection
+    const isMermaidContent = typeof note.content === 'string' && 
+      mermaidKeywords.some(keyword => {
+        const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+        return regex.test(contentStr);
+      });
+    
+    if (isMermaidContent) {
+      setContentMode("mermaid");
+      setMermaidContent(note.content as string);
+      setContent({ type: 'doc', content: [] });
+    } else {
+      // Default to rich text mode
+      setContentMode("rich");
+      setMermaidContent("");
+      let parsedContent;
+      try {
+        parsedContent = typeof note.content === 'string' ? JSON.parse(note.content) : note.content;
+      } catch {
+        // If parsing fails, treat as plain text and convert to rich text format
+        parsedContent = {
+          type: 'doc',
+          content: [{
+            type: 'paragraph',
+            content: [{ type: 'text', text: note.content as string }]
+          }]
+        };
+      }
+      setContent(parsedContent);
     }
     
-    setContent(parsedContent);
     setNoteType(note.type);
     setTags(note.tags || []);
     setPriority(note.priority);
@@ -324,14 +359,23 @@ export default function ProjectDetailPage() {
       return;
     }
 
-    if (isContentEmpty(content)) {
-      toast.error("Please enter some content");
-      return;
+    if (contentMode === "mermaid") {
+      if (!mermaidContent.trim()) {
+        toast.error("Please enter Mermaid diagram content");
+        return;
+      }
+    } else {
+      if (isContentEmpty(content)) {
+        toast.error("Please enter some content");
+        return;
+      }
     }
 
     setIsCreating(true);
     try {
-      const contentToSave = typeof content === 'object' ? JSON.stringify(content) : content;
+      const contentToSave = contentMode === "mermaid" 
+        ? mermaidContent.trim()
+        : (typeof content === 'object' ? JSON.stringify(content) : content);
       
       const payload = {
         projectId,
@@ -406,6 +450,37 @@ export default function ProjectDetailPage() {
 
   const removeTag = (tag: string) => {
     setTags(tags.filter(t => t !== tag));
+  };
+
+  const handleContentModeChange = (newMode: "rich" | "mermaid") => {
+    if (newMode === contentMode) return;
+
+    if (newMode === "mermaid") {
+      // Switching to Mermaid mode
+      if (!isContentEmpty(content)) {
+        // Convert rich text to plain text for Mermaid input
+        const plainText = extractTextFromContent(content);
+        setMermaidContent(plainText);
+      }
+      // Clear rich content but keep mermaid content
+      setContent({ type: 'doc', content: [] });
+    } else {
+      // Switching to Rich text mode
+      if (mermaidContent.trim()) {
+        // Convert Mermaid content to rich text format
+        setContent({
+          type: 'doc',
+          content: [{
+            type: 'paragraph',
+            content: [{ type: 'text', text: mermaidContent }]
+          }]
+        });
+      }
+      // Clear mermaid content but keep rich content
+      setMermaidContent("");
+    }
+    
+    setContentMode(newMode);
   };
 
   if (isPending || isLoading) {
@@ -524,117 +599,42 @@ export default function ProjectDetailPage() {
           Back to Projects
         </Button>
         
-        <div className="flex items-center gap-3 mb-4">
-          <TypeIcon className="h-8 w-8 text-primary" />
-          <h1 className="text-3xl font-bold">{project.title}</h1>
-        </div>
-        <p className="text-muted-foreground text-lg mb-6">{project.description}</p>
-        
-        {/* Project Details Card */}
-        <Card className="mb-8">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  Project Details
-                  <Badge variant="outline" className="text-xs">
-                    {project.type}
-                  </Badge>
-                </CardTitle>
-                <CardDescription>
-                  Created on {new Date(project.createdAt).toLocaleDateString()}
-                </CardDescription>
-              </div>
-              <div className="flex gap-2">
-                {project.githubUrl && (
-                  <Button
-                    variant="outline"
-                    onClick={() => window.open(project.githubUrl, '_blank')}
-                  >
-                    <Github className="h-4 w-4 mr-2" />
-                    GitHub
-                  </Button>
-                )}
-                {project.liveUrl && (
-                  <Button
-                    variant="outline"
-                    onClick={() => window.open(project.liveUrl, '_blank')}
-                  >
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Live Demo
-                  </Button>
-                )}
-              </div>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <TypeIcon className="h-8 w-8 text-primary" />
+            <div>
+              <h1 className="text-3xl font-bold">{project.title}</h1>
+              <p className="text-muted-foreground">{project.description}</p>
             </div>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div>
-                <h4 className="font-medium mb-2">Status & Priority</h4>
-                <div className="space-y-2">
-                  <Badge className={`${statusColors[project.status]}`}>
-                    <StatusIcon className="h-3 w-3 mr-1" />
-                    {project.status.replace('-', ' ')}
-                  </Badge>
-                  <Badge className={`${priorityColors[project.priority]} ml-2`}>
-                    {project.priority}
-                  </Badge>
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-medium mb-2">Tech Stack</h4>
-                <div className="flex flex-wrap gap-1">
-                  {project.techStack?.map((tech) => (
-                    <Badge key={tech} variant="secondary" className="text-xs">
-                      {tech}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-              
-              <div>
-                <h4 className="font-medium mb-2">Tags</h4>
-                <div className="flex flex-wrap gap-1">
-                  {project.tags?.map((tag) => (
-                    <Badge key={tag} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {(project.features?.length > 0 || project.challenges || project.learnings) && (
-              <div className="mt-6 space-y-4">
-                {project.features?.length > 0 && (
-                  <div>
-                    <h4 className="font-medium mb-2">Key Features</h4>
-                    <ul className="list-disc list-inside space-y-1 text-sm text-muted-foreground">
-                      {project.features.map((feature, index) => (
-                        <li key={index}>{feature}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                {project.challenges && (
-                  <div>
-                    <h4 className="font-medium mb-2">Challenges</h4>
-                    <p className="text-sm text-muted-foreground">{project.challenges}</p>
-                  </div>
-                )}
-                
-                {project.learnings && (
-                  <div>
-                    <h4 className="font-medium mb-2">Key Learnings</h4>
-                    <p className="text-sm text-muted-foreground">{project.learnings}</p>
-                  </div>
-                )}
-              </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline">{project.type}</Badge>
+            <Badge className={`${statusColors[project.status]}`}>
+              <StatusIcon className="h-3 w-3 mr-1" />
+              {project.status.replace('-', ' ')}
+            </Badge>
+            {project.githubUrl && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => window.open(project.githubUrl, '_blank')}
+              >
+                <Github className="h-4 w-4 mr-2" />
+                GitHub
+              </Button>
             )}
-          </CardContent>
-        </Card>
+            {project.liveUrl && (
+              <Button
+                variant="outline" 
+                size="sm"
+                onClick={() => window.open(project.liveUrl, '_blank')}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                Live
+              </Button>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Notes Section */}
@@ -642,12 +642,21 @@ export default function ProjectDetailPage() {
         <h2 className="text-2xl font-semibold">Project Notes</h2>
         
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreateDialog}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Note
-            </Button>
-          </DialogTrigger>
+          <div className="flex gap-2">
+            <DialogTrigger asChild>
+              <Button onClick={() => openCreateDialog("rich")} variant="default">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Note
+              </Button>
+            </DialogTrigger>
+            
+            <DialogTrigger asChild>
+              <Button onClick={() => openCreateDialog("mermaid")} variant="outline">
+                <Code2 className="h-4 w-4 mr-2" />
+                Add Mermaid
+              </Button>
+            </DialogTrigger>
+          </div>
           <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{isEditing ? "Edit Note" : "Create New Note"}</DialogTitle>
@@ -684,68 +693,183 @@ export default function ProjectDetailPage() {
 
               <div>
                 <div className="space-y-2">
-                  <h4 className="font-medium">Content</h4>
-                  <EditorProvider
-                    className="h-full w-full overflow-y-auto rounded-lg border bg-background p-4 min-h-80"
-                    content={content}
-                    onUpdate={({ editor }) => {
-                      setContent(editor.getJSON());
-                    }}
-                    placeholder="Write your note content here..."
-                  >
-                    <EditorFloatingMenu>
-                      <EditorNodeHeading1 hideName />
-                      <EditorNodeBulletList hideName />
-                      <EditorNodeQuote hideName />
-                      <EditorNodeCode hideName />
-                      <EditorNodeTable hideName />
-                    </EditorFloatingMenu>
-                    <EditorBubbleMenu>
-                      <EditorSelector title="Text">
-                        <EditorNodeText />
-                        <EditorNodeHeading1 />
-                        <EditorNodeHeading2 />
-                        <EditorNodeHeading3 />
-                        <EditorNodeBulletList />
-                        <EditorNodeOrderedList />
-                        <EditorNodeTaskList />
-                        <EditorNodeQuote />
-                        <EditorNodeCode />
-                      </EditorSelector>
-                      <EditorSelector title="Format">
-                        <EditorFormatBold />
-                        <EditorFormatItalic />
-                        <EditorFormatUnderline />
-                        <EditorFormatStrike />
-                        <EditorFormatCode />
-                        <EditorFormatSuperscript />
-                        <EditorFormatSubscript />
-                      </EditorSelector>
-                      <EditorLinkSelector />
-                      <EditorClearFormatting />
-                    </EditorBubbleMenu>
-                    <EditorTableMenu>
-                      <EditorTableColumnMenu>
-                        <EditorTableColumnBefore />
-                        <EditorTableColumnAfter />
-                        <EditorTableColumnDelete />
-                      </EditorTableColumnMenu>
-                      <EditorTableRowMenu>
-                        <EditorTableRowBefore />
-                        <EditorTableRowAfter />
-                        <EditorTableRowDelete />
-                      </EditorTableRowMenu>
-                      <EditorTableGlobalMenu>
-                        <EditorTableHeaderColumnToggle />
-                        <EditorTableHeaderRowToggle />
-                        <EditorTableDelete />
-                        <EditorTableMergeCells />
-                        <EditorTableSplitCell />
-                        <EditorTableFix />
-                      </EditorTableGlobalMenu>
-                    </EditorTableMenu>
-                    <EditorCharacterCount.Words>Words: </EditorCharacterCount.Words>
-                  </EditorProvider>
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">Content</h4>
+                    <Badge variant="secondary" className="text-xs">
+                      {contentMode === "rich" ? "Rich Text Editor" : "Mermaid Diagram"}
+                    </Badge>
+                  </div>
+                  
+                  {contentMode === "rich" ? (
+                      <EditorProvider
+                        className="h-full w-full overflow-y-auto rounded-lg border bg-background p-4 min-h-80"
+                        content={content}
+                        onUpdate={({ editor }) => {
+                          setContent(editor.getJSON());
+                        }}
+                        placeholder="Write your note content here..."
+                      >
+                        <EditorFloatingMenu>
+                          <EditorNodeHeading1 hideName />
+                          <EditorNodeBulletList hideName />
+                          <EditorNodeQuote hideName />
+                          <EditorNodeCode hideName />
+                          <EditorNodeTable hideName />
+                        </EditorFloatingMenu>
+                        <EditorBubbleMenu>
+                          <EditorSelector title="Text">
+                            <EditorNodeText />
+                            <EditorNodeHeading1 />
+                            <EditorNodeHeading2 />
+                            <EditorNodeHeading3 />
+                            <EditorNodeBulletList />
+                            <EditorNodeOrderedList />
+                            <EditorNodeTaskList />
+                            <EditorNodeQuote />
+                            <EditorNodeCode />
+                          </EditorSelector>
+                          <EditorSelector title="Format">
+                            <EditorFormatBold />
+                            <EditorFormatItalic />
+                            <EditorFormatUnderline />
+                            <EditorFormatStrike />
+                            <EditorFormatCode />
+                            <EditorFormatSuperscript />
+                            <EditorFormatSubscript />
+                          </EditorSelector>
+                          <EditorLinkSelector />
+                          <EditorClearFormatting />
+                        </EditorBubbleMenu>
+                        <EditorTableMenu>
+                          <EditorTableColumnMenu>
+                            <EditorTableColumnBefore />
+                            <EditorTableColumnAfter />
+                            <EditorTableColumnDelete />
+                          </EditorTableColumnMenu>
+                          <EditorTableRowMenu>
+                            <EditorTableRowBefore />
+                            <EditorTableRowAfter />
+                            <EditorTableRowDelete />
+                          </EditorTableRowMenu>
+                          <EditorTableGlobalMenu>
+                            <EditorTableHeaderColumnToggle />
+                            <EditorTableHeaderRowToggle />
+                            <EditorTableDelete />
+                            <EditorTableMergeCells />
+                            <EditorTableSplitCell />
+                            <EditorTableFix />
+                          </EditorTableGlobalMenu>
+                        </EditorTableMenu>
+                        <EditorCharacterCount.Words>Words: </EditorCharacterCount.Words>
+                      </EditorProvider>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <label className="text-sm font-medium">Mermaid Code</label>
+                          <Select onValueChange={(template) => {
+                            if (template && template !== 'select') {
+                              setMermaidContent(template);
+                            }
+                          }}>
+                            <SelectTrigger className="w-48">
+                              <SelectValue placeholder="Insert template" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="select">Select template...</SelectItem>
+                              <SelectItem value={`graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Process]
+    B -->|No| D[End]
+    C --> D`}>Basic Flowchart</SelectItem>
+                              <SelectItem value={`graph LR
+    subgraph "Frontend"
+        A[React App]
+        B[Components]
+    end
+    subgraph "Backend"
+        C[API Server]
+        D[Database]
+    end
+    A --> C
+    C --> D`}>System Architecture</SelectItem>
+                              <SelectItem value={`sequenceDiagram
+    participant User
+    participant App
+    participant API
+    User->>App: Click Button
+    App->>API: Send Request
+    API-->>App: Return Data
+    App-->>User: Show Result`}>Sequence Diagram</SelectItem>
+                              <SelectItem value={`classDiagram
+    class User {
+        +String name
+        +String email
+        +login()
+        +logout()
+    }
+    class Project {
+        +String title
+        +String description
+        +create()
+        +update()
+    }
+    User ||--o{ Project`}>Class Diagram</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Textarea
+                          placeholder={`Examples:
+
+Flowchart:
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Process]
+    B -->|No| D[End]
+    C --> D
+
+Architecture:
+graph LR
+    subgraph "Frontend"
+        A[React App]
+        B[Components]
+    end
+    subgraph "Backend"
+        C[API Server]
+        D[Database]
+    end
+    A --> C
+    C --> D
+
+Sequence Diagram:
+sequenceDiagram
+    participant User
+    participant App
+    participant API
+    User->>App: Click Button
+    App->>API: Send Request
+    API-->>App: Return Data
+    App-->>User: Show Result`}
+                          value={mermaidContent}
+                          onChange={(e) => setMermaidContent(e.target.value)}
+                          rows={12}
+                          className="font-mono text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Preview</label>
+                        <div className="border rounded-lg p-4 bg-background min-h-80">
+                          {mermaidContent.trim() ? (
+                            <MermaidDiagram chart={mermaidContent} />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-muted-foreground">
+                              Enter Mermaid code to see preview
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -809,7 +933,7 @@ export default function ProjectDetailPage() {
         </Dialog>
       </div>
 
-      {/* Notes Grid */}
+      {/* Notes List */}
       {notes.length === 0 ? (
         <div className="text-center py-12">
           <StickyNote className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
@@ -817,61 +941,95 @@ export default function ProjectDetailPage() {
           <p className="text-muted-foreground mb-4">
             Start documenting your project insights and progress
           </p>
-          <Button onClick={openCreateDialog}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Note
-          </Button>
+          <div className="flex gap-2 justify-center">
+            <Button onClick={() => openCreateDialog("rich")}>
+              <Plus className="h-4 w-4 mr-2" />
+              Create Note
+            </Button>
+            <Button onClick={() => openCreateDialog("mermaid")} variant="outline">
+              <Code2 className="h-4 w-4 mr-2" />
+              Create Diagram
+            </Button>
+          </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="space-y-4">
           {notes.map((note) => {
             const NoteIcon = noteTypeIcons[note.type];
             
+            // Consistent Mermaid detection
+            const mermaidKeywords = [
+              'graph', 'flowchart', 'sequenceDiagram', 'classDiagram', 'stateDiagram', 
+              'journey', 'gantt', 'pie', 'gitgraph', 'erDiagram', 'mindmap', 'timeline',
+              'sankey', 'block-beta', 'packet-beta'
+            ];
+            
+            const isMermaidContent = typeof note.content === 'string' && 
+              mermaidKeywords.some(keyword => {
+                const regex = new RegExp(`\\b${keyword}\\b`, 'i');
+                return regex.test(note.content as string);
+              });
+            
             return (
-              <Card key={note.id} className="group hover:shadow-md transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <CardTitle className="text-lg line-clamp-1 mb-1">
-                        {note.title}
-                      </CardTitle>
-                      <div className="flex items-center gap-2">
-                        <Badge className={`text-xs ${noteTypeColors[note.type]}`}>
-                          <NoteIcon className="h-3 w-3 mr-1" />
-                          {note.type}
+              <div key={note.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow bg-card">
+                {/* Header */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="text-xl font-semibold mb-2">{note.title}</h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Badge className={`text-xs ${noteTypeColors[note.type]}`}>
+                        <NoteIcon className="h-3 w-3 mr-1" />
+                        {note.type}
+                      </Badge>
+                      <Badge className={`text-xs ${priorityColors[note.priority]}`}>
+                        {note.priority}
+                      </Badge>
+                      {note.isCompleted && (
+                        <Badge variant="outline" className="text-xs">
+                          <CheckCircle className="h-3 w-3 mr-1 text-green-500" />
+                          Completed
                         </Badge>
-                        <Badge className={`text-xs ${priorityColors[note.priority]}`}>
-                          {note.priority}
+                      )}
+                      {isMermaidContent && (
+                        <Badge variant="secondary" className="text-xs">
+                          <Code2 className="h-3 w-3 mr-1" />
+                          Diagram
                         </Badge>
-                        {note.isCompleted && (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-1 ml-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditDialog(note)}
-                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(note.id)}
-                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
+                      )}
+                      {note.tags?.map((tag) => (
+                        <Badge key={tag} variant="outline" className="text-xs">
+                          {tag}
+                        </Badge>
+                      ))}
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {/* Content Preview */}
-                    <div className="text-sm text-muted-foreground line-clamp-3">
+                  <div className="flex items-center gap-2 ml-4">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openEditDialog(note)}
+                    >
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleDelete(note.id)}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+                
+                {/* Content */}
+                <div className="prose prose-sm max-w-none dark:prose-invert">
+                  {isMermaidContent ? (
+                    <div className="bg-muted/50 rounded-lg p-4 my-4">
+                      <MermaidDiagram chart={note.content as string} />
+                    </div>
+                  ) : (
+                    <div className="text-muted-foreground">
                       {(() => {
                         let displayText = '';
                         if (typeof note.content === 'string') {
@@ -887,34 +1045,20 @@ export default function ProjectDetailPage() {
                           displayText = extractTextFromContent(note.content);
                         }
                         
-                        return displayText.length > 100 
-                          ? `${displayText.substring(0, 100)}...`
-                          : displayText || "No content available";
+                        return displayText || "No content available";
                       })()}
                     </div>
-                    
-                    {/* Tags */}
-                    {note.tags?.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {note.tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                        {note.tags.length > 3 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{note.tags.length - 3}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                    
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(note.createdAt).toLocaleDateString()}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  )}
+                </div>
+                
+                {/* Footer */}
+                <div className="flex items-center justify-between mt-4 pt-4 border-t text-xs text-muted-foreground">
+                  <span>Created: {new Date(note.createdAt).toLocaleDateString()}</span>
+                  {note.updatedAt !== note.createdAt && (
+                    <span>Updated: {new Date(note.updatedAt).toLocaleDateString()}</span>
+                  )}
+                </div>
+              </div>
             );
           })}
         </div>
