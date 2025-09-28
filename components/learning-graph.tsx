@@ -1,0 +1,554 @@
+"use client"
+import React, { useState } from 'react';
+import Tree from 'react-d3-tree';
+import { Plus, FileText, Link, Youtube, X, Edit2, Trash2, Save, FolderPlus, Eye, ExternalLink } from 'lucide-react';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+
+interface NodeData {
+  id?: string;
+  name: string;
+  attributes?: {
+    notes: string;
+    resourcesCount: number;
+    youtubeLinksCount: number;
+    resources: string[];
+    youtubeLinks: string[];
+  };
+  children?: NodeData[];
+}
+
+const GraphicalNotes = () => {
+  const [treeData, setTreeData] = useState<NodeData | null>(null);
+  const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [viewingNode, setViewingNode] = useState<NodeData | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [nodeToDelete, setNodeToDelete] = useState<NodeData | null>(null);
+  const [formData, setFormData] = useState({
+    title: '',
+    notes: '',
+    resources: '',
+    youtubeLinks: ''
+  });
+
+  const findNodeAndParent = (node: NodeData, targetId: string, parent: NodeData | null = null): { node: NodeData; parent: NodeData | null } | null => {
+    if (node.id === targetId) {
+      return { node, parent };
+    }
+    if (node.children) {
+      for (let child of node.children) {
+        const result = findNodeAndParent(child, targetId, node);
+        if (result) return result;
+      }
+    }
+    return null;
+  };
+
+  const generateId = () => `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+  const handleNodeClick = (nodeData: any) => {
+    setViewingNode(nodeData);
+    setViewDialogOpen(true);
+  };
+
+  const convertToTreeFormat = (node: NodeData): any => {
+    const converted: any = {
+      name: node.name,
+      id: node.id,
+      children: node.children?.map(convertToTreeFormat) || []
+    };
+    
+    if (node.attributes) {
+      converted.attributes = {
+        notes: node.attributes.notes,
+        resourcesCount: node.attributes.resourcesCount,
+        youtubeLinksCount: node.attributes.youtubeLinksCount
+      };
+      converted._fullData = node;
+    }
+    
+    return converted;
+  };
+
+  const handleAddChild = (parentNode: NodeData | null = null) => {
+    setSelectedNode(parentNode);
+    setEditMode(false);
+    setFormData({
+      title: '',
+      notes: '',
+      resources: '',
+      youtubeLinks: ''
+    });
+    setDialogOpen(true);
+  };
+
+  const handleEditNode = (node: NodeData) => {
+    setSelectedNode(node);
+    setEditMode(true);
+    setFormData({
+      title: node.name,
+      notes: node.attributes?.notes || '',
+      resources: (node.attributes?.resources || []).join('\n'),
+      youtubeLinks: (node.attributes?.youtubeLinks || []).join('\n')
+    });
+    setDialogOpen(true);
+  };
+
+  const handleDeleteNode = (nodeToDelete: NodeData) => {
+    setNodeToDelete(nodeToDelete);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteNode = () => {
+    if (!nodeToDelete?.id || !treeData) return;
+    
+    if (nodeToDelete.id === treeData.id) {
+      // If deleting the root node, clear the entire tree
+      setTreeData(null);
+    } else {
+      setTreeData(prevData => {
+        if (!prevData) return null;
+        const newData = JSON.parse(JSON.stringify(prevData));
+        const result = findNodeAndParent(newData, nodeToDelete.id!);
+        
+        if (result && result.parent) {
+          result.parent.children = result.parent.children?.filter((child: NodeData) => child.id !== nodeToDelete.id);
+        }
+        
+        return newData;
+      });
+    }
+    
+    setSelectedNode(null);
+    setNodeToDelete(null);
+    setDeleteDialogOpen(false);
+  };
+
+  const handleSave = () => {
+    const resources = formData.resources.split('\n').filter(r => r.trim());
+    const youtubeLinks = formData.youtubeLinks.split('\n').filter(l => l.trim());
+    
+    const processedData: NodeData = {
+      name: formData.title || 'New Topic',
+      attributes: {
+        notes: formData.notes,
+        resourcesCount: resources.length,
+        youtubeLinksCount: youtubeLinks.length,
+        resources: resources,
+        youtubeLinks: youtubeLinks
+      },
+      children: []
+    };
+
+    if (!treeData) {
+      setTreeData({
+        ...processedData,
+        id: generateId()
+      });
+    } else {
+      setTreeData(prevData => {
+        if (!prevData) return null;
+        const newData = JSON.parse(JSON.stringify(prevData));
+        
+        if (editMode && selectedNode?.id) {
+          const result = findNodeAndParent(newData, selectedNode.id);
+          if (result) {
+            result.node.name = processedData.name;
+            result.node.attributes = processedData.attributes;
+          }
+        } else if (selectedNode) {
+          const newNode = {
+            ...processedData,
+            id: generateId()
+          };
+          
+          if (selectedNode.id) {
+            const result = findNodeAndParent(newData, selectedNode.id);
+            if (result) {
+              if (!result.node.children) result.node.children = [];
+              result.node.children.push(newNode);
+            }
+          } else {
+            if (!newData.children) newData.children = [];
+            newData.children.push(newNode);
+          }
+        }
+        
+        return newData;
+      });
+    }
+
+    setDialogOpen(false);
+    setFormData({ title: '', notes: '', resources: '', youtubeLinks: '' });
+  };
+
+  const renderCustomNode = ({ nodeDatum }: { nodeDatum: any }) => {
+    const fullData = nodeDatum._fullData || nodeDatum;
+    
+    return (
+      <g>
+        <circle r="6" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+        
+        <foreignObject x="15" y="-40" width="140" height="80">
+          <Card 
+            className="w-full h-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/60 shadow-sm hover:shadow-lg dark:shadow-gray-900/20 transition-all cursor-pointer text-xs hover:bg-white/95 dark:hover:bg-gray-800/95"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleNodeClick(fullData);
+            }}
+          >
+            <CardHeader className="p-2 pb-1">
+              <div className="flex justify-between items-start gap-1">
+                <CardTitle className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate flex-1 leading-tight">
+                  {nodeDatum.name}
+                </CardTitle>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-4 w-4 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/30 shrink-0"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleAddChild(fullData);
+                  }}
+                >
+                  <Plus className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
+                </Button>
+              </div>
+            </CardHeader>
+            
+            <CardContent className="p-2 pt-0 space-y-1">
+              {fullData.attributes?.notes && (
+                <div className="flex items-center gap-1">
+                  <FileText className="w-2.5 h-2.5 text-gray-400 dark:text-gray-500 shrink-0" />
+                  <span className="text-[10px] text-gray-600 dark:text-gray-400 truncate">
+                    {fullData.attributes.notes.substring(0, 15)}...
+                  </span>
+                </div>
+              )}
+              
+              <div className="flex gap-1 justify-between">
+                <div className="flex gap-1">
+                  {fullData.attributes?.resourcesCount > 0 && (
+                    <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
+                      <Link className="w-2 h-2 mr-0.5" />
+                      {fullData.attributes.resourcesCount}
+                    </Badge>
+                  )}
+                  
+                  {fullData.attributes?.youtubeLinksCount > 0 && (
+                    <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
+                      <Youtube className="w-2 h-2 mr-0.5" />
+                      {fullData.attributes.youtubeLinksCount}
+                    </Badge>
+                  )}
+                </div>
+                
+                <div className="flex gap-0.5">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-4 w-4 p-0 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEditNode(fullData);
+                    }}
+                  >
+                    <Edit2 className="w-2.5 h-2.5 text-gray-500 dark:text-gray-400" />
+                  </Button>
+                  {fullData.id && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-4 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/30"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteNode(fullData);
+                      }}
+                    >
+                      <Trash2 className="w-2.5 h-2.5 text-red-500 dark:text-red-400" />
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </foreignObject>
+      </g>
+    );
+  };
+
+  return (
+    <div className="w-full h-screen relative bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
+      <div className="absolute top-0 left-0 right-0 z-10 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm bg-white/30 dark:bg-gray-900/30">
+        <div className="p-4">
+          <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-800 dark:text-gray-100">
+            <FolderPlus className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            Graphical Notes Manager
+          </h1>
+          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Create and organize your knowledge hierarchically</p>
+        </div>
+      </div>
+
+      <div className="w-full h-full pt-20">
+        {treeData ? (
+          <Tree
+            data={convertToTreeFormat(treeData)}
+            orientation="horizontal"
+            translate={{ x: 120, y: window.innerHeight / 2 - 100 }}
+            nodeSize={{ x: 160, y: 100 }}
+            separation={{ siblings: 1.2, nonSiblings: 1.4 }}
+            renderCustomNodeElement={renderCustomNode}
+            onNodeClick={(node) => handleNodeClick((node.data as any)._fullData || node.data)}
+            pathFunc="straight"
+            pathClassFunc={() => "stroke-blue-300 dark:stroke-blue-600 stroke-2 fill-none"}
+            enableLegacyTransitions
+            transitionDuration={500}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <Card className="p-8 text-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg dark:shadow-gray-900/20 border-dashed border-2 border-indigo-200 dark:border-indigo-600">
+              <div className="space-y-4">
+                <Button
+                  size="lg"
+                  onClick={() => handleAddChild(null)}
+                  className="h-16 w-16 rounded-full bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                >
+                  <Plus className="w-8 h-8 text-white" />
+                </Button>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-1">Create Your First Topic</h3>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Start building your knowledge graph</p>
+                </div>
+              </div>
+            </Card>
+          </div>
+        )}
+      </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-gray-200 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-gray-800 dark:text-gray-200">
+              {editMode ? 'Edit Topic' : 'Add New Topic'}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="title" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Topic Title
+              </Label>
+              <Input
+                id="title"
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                placeholder="Enter topic title"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="notes" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Notes
+              </Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                rows={3}
+                placeholder="Add your notes here"
+                className="mt-1 resize-none"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="resources" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Resources (one per line)
+              </Label>
+              <Textarea
+                id="resources"
+                value={formData.resources}
+                onChange={(e) => setFormData({ ...formData, resources: e.target.value })}
+                rows={2}
+                placeholder="https://example.com/resource&#10;https://docs.example.com"
+                className="mt-1 resize-none"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="youtube" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                YouTube Links (one per line)
+              </Label>
+              <Textarea
+                id="youtube"
+                value={formData.youtubeLinks}
+                onChange={(e) => setFormData({ ...formData, youtubeLinks: e.target.value })}
+                rows={2}
+                placeholder="https://youtube.com/watch?v=...&#10;https://youtu.be/..."
+                className="mt-1 resize-none"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} className="bg-indigo-600 hover:bg-indigo-700">
+              <Save className="w-4 h-4 mr-2" />
+              Save
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="sm:max-w-2xl bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-gray-200 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="text-gray-800 dark:text-gray-200 flex items-center gap-2">
+              <Eye className="w-5 h-5" />
+              {viewingNode?.name}
+            </DialogTitle>
+          </DialogHeader>
+
+          {viewingNode && (
+            <div className="space-y-4">
+              {viewingNode.attributes?.notes && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Notes</Label>
+                  <div className="mt-1 p-3 bg-gray-50 dark:bg-gray-800 rounded-md text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+                    {viewingNode.attributes.notes}
+                  </div>
+                </div>
+              )}
+
+              {viewingNode.attributes?.resources && viewingNode.attributes.resources.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Resources</Label>
+                  <div className="mt-1 space-y-2">
+                    {viewingNode.attributes.resources.map((resource, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-md">
+                        <Link className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                        <a 
+                          href={resource} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 underline flex-1 truncate"
+                        >
+                          {resource}
+                        </a>
+                        <ExternalLink className="w-3 h-3 text-blue-500 dark:text-blue-400" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {viewingNode.attributes?.youtubeLinks && viewingNode.attributes.youtubeLinks.length > 0 && (
+                <div>
+                  <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">YouTube Videos</Label>
+                  <div className="mt-1 space-y-2">
+                    {viewingNode.attributes.youtubeLinks.map((link, index) => (
+                      <div key={index} className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-900/20 rounded-md">
+                        <Youtube className="w-4 h-4 text-red-500 dark:text-red-400" />
+                        <a 
+                          href={link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 underline flex-1 truncate"
+                        >
+                          {link}
+                        </a>
+                        <ExternalLink className="w-3 h-3 text-red-500 dark:text-red-400" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDialogOpen(false)}>
+              Close
+            </Button>
+            <div className="flex gap-2">
+              {viewingNode?.id && (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    setViewDialogOpen(false);
+                    if (viewingNode) handleDeleteNode(viewingNode);
+                  }}
+                  className="border-red-200 text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Delete
+                </Button>
+              )}
+              <Button onClick={() => {
+                setViewDialogOpen(false);
+                if (viewingNode) handleEditNode(viewingNode);
+              }}>
+                <Edit2 className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+            </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-700">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-red-500" />
+              Delete Topic
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-600 dark:text-gray-400">
+              Are you sure you want to delete "{nodeToDelete?.name}"? 
+              {nodeToDelete?.children && nodeToDelete.children.length > 0 && (
+                <span className="block mt-2 text-amber-600 dark:text-amber-400 font-medium">
+                  ⚠️ This will also delete all {nodeToDelete.children.length} subtopic(s).
+                </span>
+              )}
+              <span className="block mt-2">
+                This action cannot be undone.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel 
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setNodeToDelete(null);
+              }}
+              className="border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={confirmDeleteNode}
+              className="bg-red-600 hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600 text-white"
+            >
+              <Trash2 className="w-4 h-4 mr-2" />
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+export default GraphicalNotes;
