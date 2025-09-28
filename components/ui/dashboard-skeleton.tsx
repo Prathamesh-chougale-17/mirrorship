@@ -114,7 +114,7 @@ export function CodingDashboardSkeleton() {
           
           {/* Heatmaps Grid - 2 platforms per row on large screens to match actual layout */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {Array.from({ length: 3 }).map((_, i) => (
+            {Array.from({ length: 4 }).map((_, i) => (
               <div key={i}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
