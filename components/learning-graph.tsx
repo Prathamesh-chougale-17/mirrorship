@@ -287,18 +287,8 @@ const GraphicalNotes = () => {
   };
 
   return (
-    <div className="w-full h-screen relative bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800 transition-colors duration-300">
-      <div className="absolute top-0 left-0 right-0 z-10 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50 shadow-sm bg-white/30 dark:bg-gray-900/30">
-        <div className="p-4">
-          <h1 className="text-2xl font-bold flex items-center gap-2 text-gray-800 dark:text-gray-100">
-            <FolderPlus className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-            Graphical Notes Manager
-          </h1>
-          <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">Create and organize your knowledge hierarchically</p>
-        </div>
-      </div>
-
-      <div className="w-full h-full pt-20">
+    <div className="w-full h-[90vh] relative">
+      <div className="w-full h-full">
         {treeData ? (
           <Tree
             data={convertToTreeFormat(treeData)}
@@ -308,7 +298,7 @@ const GraphicalNotes = () => {
             separation={{ siblings: 1.2, nonSiblings: 1.4 }}
             renderCustomNodeElement={renderCustomNode}
             onNodeClick={(node) => handleNodeClick((node.data as any)._fullData || node.data)}
-            pathFunc="straight"
+            pathFunc="diagonal"
             pathClassFunc={() => "stroke-blue-300 dark:stroke-white stroke-2 fill-none"}
             enableLegacyTransitions
             transitionDuration={500}
