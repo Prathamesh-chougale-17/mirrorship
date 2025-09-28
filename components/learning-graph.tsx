@@ -197,9 +197,7 @@ const GraphicalNotes = () => {
     
     return (
       <g>
-        <circle r="6" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
-        
-        <foreignObject x="15" y="-40" width="140" height="80">
+        <foreignObject x="-70" y="-40" width="140" height="80">
           <Card 
             className="w-full h-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/60 shadow-sm hover:shadow-lg dark:shadow-gray-900/20 transition-all cursor-pointer text-xs hover:bg-white/95 dark:hover:bg-gray-800/95"
             onClick={(e) => {
@@ -283,6 +281,7 @@ const GraphicalNotes = () => {
             </CardContent>
           </Card>
         </foreignObject>
+        <circle r="6" cx="70" cy="0" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
       </g>
     );
   };
@@ -310,7 +309,7 @@ const GraphicalNotes = () => {
             renderCustomNodeElement={renderCustomNode}
             onNodeClick={(node) => handleNodeClick((node.data as any)._fullData || node.data)}
             pathFunc="straight"
-            pathClassFunc={() => "stroke-blue-300 dark:stroke-blue-600 stroke-2 fill-none"}
+            pathClassFunc={() => "stroke-blue-300 dark:stroke-white stroke-2 fill-none"}
             enableLegacyTransitions
             transitionDuration={500}
           />
