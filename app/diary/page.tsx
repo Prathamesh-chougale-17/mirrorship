@@ -8,6 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { Editor, JSONContent } from "@/components/ui/kibo-ui/editor";
 import {
   EditorBubbleMenu,
@@ -51,7 +57,7 @@ import {
   EditorTableRowMenu,
   EditorTableSplitCell,
 } from "@/components/ui/kibo-ui/editor";
-import { Calendar, Save, Sparkles, BookOpen, Heart } from "lucide-react";
+import { Save, Sparkles, BookOpen, Heart, CalendarIcon } from "lucide-react";
 import { toast } from "sonner";
 
 interface DiaryEntry {
@@ -92,13 +98,40 @@ export default function DiaryPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [entriesByDate, setEntriesByDate] = useState<Set<string>>(new Set());
+  const [calendarDate, setCalendarDate] = useState<Date | undefined>(new Date());
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
-  // Load entry for selected date
+  // Load entry for selected date and fetch entries for calendar
   useEffect(() => {
     if (session?.user && selectedDate) {
       loadEntry(selectedDate);
     }
   }, [session?.user, selectedDate]);
+
+  useEffect(() => {
+    if (session?.user) {
+      fetchMonthlyEntries();
+    }
+  }, [session?.user, calendarDate]);
+
+  const fetchMonthlyEntries = async () => {
+    if (!calendarDate) return;
+    
+    try {
+      const year = calendarDate.getFullYear();
+      const month = calendarDate.getMonth() + 1;
+      const response = await fetch(`/api/diary?month=${year}-${month.toString().padStart(2, '0')}`);
+      const data = await response.json();
+      
+      if (data.entries) {
+        const dates = new Set<string>(data.entries.map((entry: DiaryEntry) => entry.date));
+        setEntriesByDate(dates);
+      }
+    } catch (error) {
+      console.error("Error fetching monthly entries:", error);
+    }
+  };
 
   const loadEntry = async (date: string) => {
     setIsLoading(true);
@@ -181,6 +214,8 @@ export default function DiaryPage() {
       
       // Reload the entry to get AI summary and other processed data
       await loadEntry(selectedDate);
+      // Refresh the calendar to show the new entry
+      await fetchMonthlyEntries();
     } catch (error) {
       console.error("Error saving diary entry:", error);
       toast.error(error instanceof Error ? error.message : "Failed to save entry");
@@ -243,6 +278,28 @@ export default function DiaryPage() {
     return text.trim();
   };
 
+  const handleCalendarDateSelect = (date: Date | undefined) => {
+    if (date) {
+      // Use local date to avoid timezone issues
+      const year = date.getFullYear();
+      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+      const day = date.getDate().toString().padStart(2, '0');
+      const dateString = `${year}-${month}-${day}`;
+      setSelectedDate(dateString);
+      setCalendarDate(date);
+      setCalendarOpen(false);
+    }
+  };
+
+  const formatDateForDisplay = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
   if (isPending || isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -258,10 +315,7 @@ export default function DiaryPage() {
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Skeleton className="h-4 w-4" />
-                <Skeleton className="h-10 w-32" />
-              </div>
+              <Skeleton className="h-10 w-28" />
               <Skeleton className="h-10 w-20" />
             </div>
           </div>
@@ -275,9 +329,9 @@ export default function DiaryPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Main Editor Skeleton */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="lg:col-span-3 space-y-6">
             {/* Title Input Skeleton */}
             <Card>
               <CardHeader>
@@ -393,16 +447,52 @@ export default function DiaryPage() {
           </div>
           
           <div className="flex items-center gap-4">
-            {/* Date Selector */}
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-auto"
-              />
-            </div>
+            {/* Calendar Popover */}
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="flex items-center gap-2"
+                >
+                  <CalendarIcon className="h-4 w-4" />
+                  {formatDateForDisplay(selectedDate)}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent
+                className="w-auto overflow-hidden p-0"
+                align="end"
+                alignOffset={-8}
+                sideOffset={10}
+              >
+                <Calendar
+                  mode="single"
+                  selected={new Date(selectedDate)}
+                  onSelect={handleCalendarDateSelect}
+                  onMonthChange={setCalendarDate}
+                  captionLayout="dropdown"
+                  modifiers={{
+                    hasEntry: (date) => {
+                      // Use local date to avoid timezone issues
+                      const year = date.getFullYear();
+                      const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                      const day = date.getDate().toString().padStart(2, '0');
+                      const dateString = `${year}-${month}-${day}`;
+                      return entriesByDate.has(dateString);
+                    }
+                  }}
+                  modifiersStyles={{
+                    hasEntry: {
+                      // circular background
+                      backgroundColor: 'rgb(34 197 94)', // green-500
+                      border: '2px solid rgb(34 197 94)', // green-500
+                      borderRadius: '9999px',
+                      color: 'white',
+                      fontWeight: 'bold'
+                    }
+                  }}
+                />
+              </PopoverContent>
+            </Popover>
             
             {/* Save Button */}
             <Button 
@@ -436,9 +526,9 @@ export default function DiaryPage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Editor */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="lg:col-span-3 space-y-6">
           {/* Title Input */}
           <Card>
             <CardHeader>

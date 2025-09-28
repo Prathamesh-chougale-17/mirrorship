@@ -40,6 +40,21 @@ export class DatabaseService {
     return entry;
   }
 
+  static async getDiaryEntriesByMonth(userId: string, month: string) {
+    const db = await this.getDb();
+    // Month format is YYYY-MM, we need to find all dates that start with this pattern
+    const regex = new RegExp(`^${month}-`);
+    const entries = await db
+      .collection<DiaryEntry>(COLLECTIONS.DIARY_ENTRIES)
+      .find({ 
+        userId, 
+        date: { $regex: regex }
+      })
+      .sort({ date: -1 })
+      .toArray();
+    return entries;
+  }
+
   static async updateDiaryEntry(id: string, userId: string, updates: Partial<DiaryEntry>) {
     const db = await this.getDb();
     const result = await db

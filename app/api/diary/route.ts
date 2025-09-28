@@ -45,11 +45,16 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(url.searchParams.get("limit") || "10");
     const skip = parseInt(url.searchParams.get("skip") || "0");
     const date = url.searchParams.get("date");
+    const month = url.searchParams.get("month");
 
     if (date) {
       // Get specific entry by date
       const entry = await DatabaseService.getDiaryEntryByDate(user.id, date);
       return NextResponse.json({ entry });
+    } else if (month) {
+      // Get entries for a specific month (format: YYYY-MM)
+      const entries = await DatabaseService.getDiaryEntriesByMonth(user.id, month);
+      return NextResponse.json({ entries });
     } else {
       // Get multiple entries
       const entries = await DatabaseService.getDiaryEntries(user.id, limit, skip);
