@@ -15,7 +15,9 @@ import {
   AlertTriangle,
   Zap,
   Trophy,
-  BookOpen
+  BookOpen,
+  Calendar,
+  PenTool
 } from "lucide-react";
 import { 
   ContributionGraph, 
@@ -98,6 +100,13 @@ interface CodingDashboardProps {
   onManualSync: (platforms?: string[]) => void;
   stats?: DashboardStats;
   kanbanSummary?: KanbanSummary;
+  diaryHeatmapData?: Array<{
+    date: string;
+    count: number;
+    wordCount?: number;
+    mood?: number;
+  }>;
+  isLoading?: boolean;
 }
 
 export function CodingDashboard({
@@ -110,7 +119,9 @@ export function CodingDashboard({
   getLeetCodeMotivation,
   onManualSync,
   stats,
-  kanbanSummary
+  kanbanSummary,
+  diaryHeatmapData = [],
+  isLoading = false
 }: CodingDashboardProps) {
   // Filter contribution data to show only last 9 months
   const filterLast9Months = (data: ContributionActivity[]): ContributionActivity[] => {
@@ -124,6 +135,35 @@ export function CodingDashboard({
   const filteredGithubData = filterLast9Months(contributionData.github.data);
   const filteredLeetcodeData = filterLast9Months(contributionData.leetcode.data);
   const filteredYoutubeData = filterLast9Months(contributionData.youtube.data);
+  
+  // Generate full 9-month date range for diary data
+  const generateFullDiaryData = (): ContributionActivity[] => {
+    const nineMonthsAgo = new Date();
+    nineMonthsAgo.setMonth(nineMonthsAgo.getMonth() - 9);
+    const today = new Date();
+    
+    const fullData: ContributionActivity[] = [];
+    const diaryMap = new Map(diaryHeatmapData.map(entry => [entry.date, entry]));
+    
+    for (let date = new Date(nineMonthsAgo); date <= today; date.setDate(date.getDate() + 1)) {
+      const dateString = date.toISOString().split('T')[0];
+      const diaryEntry = diaryMap.get(dateString);
+      const count = diaryEntry?.count || 0;
+      
+      fullData.push({
+        date: dateString,
+        count,
+        level: count === 0 ? 0 : 
+               count === 1 ? 1 : 
+               count === 2 ? 2 :
+               count >= 3 ? 3 : 1 as 0 | 1 | 2 | 3 | 4
+      });
+    }
+    
+    return fullData;
+  };
+  
+  const filteredDiaryData = generateFullDiaryData();
   return (
     <Card className="overflow-hidden p-0">
       <CardContent className="p-4 md:p-6">
@@ -513,6 +553,56 @@ export function CodingDashboard({
                   </TooltipProvider>
                 </div>
               )}
+
+              {/* Diary Writing Heatmap */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium flex items-center gap-2">
+                    <PenTool className="w-4 h-4 text-purple-600" />
+                    Diary Entries
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    {diaryHeatmapData.reduce((sum, entry) => sum + entry.count, 0)} entries
+                  </span>
+                </div>
+                <TooltipProvider>
+                  <ContributionGraph 
+                    data={filteredDiaryData} 
+                    blockSize={14}
+                    blockMargin={3}
+                    fontSize={12}
+                    className="text-xs"
+                  >
+                    <ContributionGraphCalendar>
+                      {({ activity, dayIndex, weekIndex }) => (
+                        <ShadcnTooltip key={`diary-${weekIndex}-${dayIndex}`}>
+                          <TooltipTrigger asChild>
+                            <ContributionGraphBlock
+                              activity={activity}
+                              dayIndex={dayIndex}
+                              weekIndex={weekIndex}
+                              className="hover:stroke-2 hover:stroke-foreground/40 cursor-pointer transition-all data-[level='0']:fill-muted data-[level='1']:fill-purple-200 data-[level='2']:fill-purple-400 data-[level='3']:fill-purple-600 data-[level='4']:fill-purple-800"
+                            />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="text-center">
+                              <div className="font-semibold">
+                                {activity.count === 0 ? 'No entries' : `${activity.count} ${activity.count === 1 ? 'entry' : 'entries'}`}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {new Date(activity.date).toLocaleDateString()}
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </ShadcnTooltip>
+                      )}
+                    </ContributionGraphCalendar>
+                    <ContributionGraphFooter className="text-xs">
+                      <ContributionGraphLegend />
+                    </ContributionGraphFooter>
+                  </ContributionGraph>
+                </TooltipProvider>
+              </div>
             </div>
 
           </div>

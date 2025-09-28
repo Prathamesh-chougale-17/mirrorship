@@ -40,6 +40,9 @@ export async function GET(req: NextRequest) {
     // Get kanban summary
     const kanbanSummary = await DatabaseService.getKanbanSummary(user.id);
 
+    // Get diary heatmap data for the past year
+    const diaryHeatmapData = await DatabaseService.getDiaryHeatmapData(user.id);
+
     // Get mood trends from recent entries
     const entriesWithMood = recentEntries.filter(entry => entry.mood !== undefined);
     const moodTrend = entriesWithMood.length > 0 ? {
@@ -88,6 +91,7 @@ export async function GET(req: NextRequest) {
           words: entry.wordCount || 0
         })).reverse()
       },
+      diaryHeatmap: diaryHeatmapData,
       kanbanSummary,
       activitySummary: activitySummary.map(activity => ({
         type: activity._id,

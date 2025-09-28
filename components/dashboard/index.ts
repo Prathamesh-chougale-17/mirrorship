@@ -10,3 +10,4 @@ export { RecentEntries } from "./recent-entries";
 export { TaskProgress } from "./task-progress";
 export { ActivitySummaryCard } from "./activity-summary";
 export { QuickActions } from "./quick-actions";
+export { DiaryHeatmap } from "./diary-heatmap";

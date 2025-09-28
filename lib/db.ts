@@ -64,6 +64,49 @@ export class DatabaseService {
     return result;
   }
 
+  // Get diary data for heatmap (last 365 days)
+  static async getDiaryHeatmapData(userId: string) {
+    const db = await this.getDb();
+    const oneYearAgo = new Date();
+    oneYearAgo.setDate(oneYearAgo.getDate() - 365);
+    
+    const entries = await db
+      .collection<DiaryEntry>(COLLECTIONS.DIARY_ENTRIES)
+      .find({ 
+        userId,
+        date: { $gte: oneYearAgo.toISOString().split('T')[0] }
+      })
+      .project({
+        date: 1,
+        wordCount: 1,
+        mood: 1
+      })
+      .sort({ date: 1 })
+      .toArray();
+
+    // Group entries by date and count them
+    const heatmapData = entries.reduce((acc: { [key: string]: { count: number; wordCount: number; mood?: number } }, entry) => {
+      const date = entry.date;
+      if (!acc[date]) {
+        acc[date] = { count: 0, wordCount: 0 };
+      }
+      acc[date].count += 1;
+      acc[date].wordCount += entry.wordCount || 0;
+      if (entry.mood) {
+        acc[date].mood = entry.mood;
+      }
+      return acc;
+    }, {});
+
+    // Convert to array format expected by component
+    return Object.entries(heatmapData).map(([date, data]) => ({
+      date,
+      count: data.count,
+      wordCount: data.wordCount,
+      mood: data.mood
+    }));
+  }
+
   // Kanban Note operations
   static async createKanbanNote(note: Omit<KanbanNote, "_id">) {
     const db = await this.getDb();

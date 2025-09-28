@@ -2,6 +2,7 @@
 
 import { TrendsChart } from "./trends-chart";
 import { RecentEntries } from "./recent-entries";
+import { DiaryHeatmap } from "./diary-heatmap";
 
 interface DashboardData {
   stats: {
@@ -26,6 +27,12 @@ interface DashboardData {
     mood: Array<{ date: string; mood: number }>;
     wordCount: Array<{ date: string; words: number }>;
   };
+  diaryHeatmap: Array<{
+    date: string;
+    count: number;
+    wordCount?: number;
+    mood?: number;
+  }>;
 }
 
 interface DashboardContentProps {

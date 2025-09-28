@@ -51,6 +51,12 @@ interface DashboardData {
     mood: Array<{ date: string; mood: number }>;
     wordCount: Array<{ date: string; words: number }>;
   };
+  diaryHeatmap: Array<{
+    date: string;
+    count: number;
+    wordCount?: number;
+    mood?: number;
+  }>;
 }
 
 interface ContributionStats {
@@ -432,6 +438,8 @@ export default function DashboardPage() {
           onManualSync={(platforms) => handleManualSync(platforms)}
           stats={dashboardData?.stats}
           kanbanSummary={dashboardData?.kanbanSummary}
+          diaryHeatmapData={dashboardData?.diaryHeatmap}
+          isLoading={dashboardLoading}
         />
       )}
 
