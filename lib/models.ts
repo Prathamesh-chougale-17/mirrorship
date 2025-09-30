@@ -263,6 +263,42 @@ export interface ProjectNote {
   updatedAt: Date;
 }
 
+// Learning Topic Model (for main learning topics/subjects)
+export interface LearningTopic {
+  _id?: ObjectId;
+  id: string;
+  userId: string;
+  title: string;
+  description?: string;
+  color?: string; // Hex color for visual distinction
+  icon?: string; // Icon name or emoji
+  tags: string[];
+  isArchived: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// Learning Node Model (for individual nodes in the learning graph)
+export interface LearningNode {
+  id: string;
+  name: string;
+  notes: string;
+  resources: string[];
+  youtubeLinks: string[];
+  children?: LearningNode[];
+}
+
+// Learning Graph Model (for storing the complete graph structure)
+export interface LearningGraph {
+  _id?: ObjectId;
+  id: string;
+  userId: string;
+  topicId: string; // Reference to LearningTopic
+  rootNode: LearningNode;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // Collection names
 export const COLLECTIONS = {
   USERS: "users",
@@ -277,5 +313,7 @@ export const COLLECTIONS = {
   YOUTUBE_UPLOADS: "youtube_uploads",
   YOUTUBE_CHANNELS: "youtube_channels",
   PROJECTS: "projects",
-  PROJECT_NOTES: "project_notes"
+  PROJECT_NOTES: "project_notes",
+  LEARNING_TOPICS: "learning_topics",
+  LEARNING_GRAPHS: "learning_graphs"
 } as const;

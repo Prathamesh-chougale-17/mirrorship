@@ -1,7 +1,8 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Tree from 'react-d3-tree';
 import { Plus, FileText, Link, Youtube, X, Edit2, Trash2, Save, FolderPlus, Eye, ExternalLink } from 'lucide-react';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -25,7 +26,11 @@ interface NodeData {
   children?: NodeData[];
 }
 
-const GraphicalNotes = () => {
+interface GraphicalNotesProps {
+  topicId: string;
+}
+
+const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
   const [treeData, setTreeData] = useState<NodeData | null>(null);
   const [selectedNode, setSelectedNode] = useState<NodeData | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -34,12 +39,67 @@ const GraphicalNotes = () => {
   const [editMode, setEditMode] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [nodeToDelete, setNodeToDelete] = useState<NodeData | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     title: '',
     notes: '',
     resources: '',
     youtubeLinks: ''
   });
+
+  useEffect(() => {
+    loadGraph();
+  }, [topicId]);
+
+  // Auto-save whenever treeData changes
+  useEffect(() => {
+    if (treeData && !loading) {
+      const timeoutId = setTimeout(() => {
+        saveGraph();
+      }, 1000); // Debounce save by 1 second
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [treeData, loading]);
+
+  const loadGraph = async () => {
+    try {
+      const response = await fetch(`/api/learning/graph/${topicId}`);
+      const data = await response.json();
+      
+      if (data.graph?.rootNode) {
+        setTreeData(data.graph.rootNode);
+      }
+    } catch (error) {
+      console.error('Error loading graph:', error);
+      toast.error('Failed to load graph');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveGraph = async () => {
+    if (!treeData || saving) return;
+
+    setSaving(true);
+    try {
+      const response = await fetch(`/api/learning/graph/${topicId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rootNode: treeData })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save');
+      }
+    } catch (error) {
+      console.error('Error saving graph:', error);
+      toast.error('Failed to save graph');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const findNodeAndParent = (node: NodeData, targetId: string, parent: NodeData | null = null): { node: NodeData; parent: NodeData | null } | null => {
     if (node.id === targetId) {
@@ -286,8 +346,26 @@ const GraphicalNotes = () => {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="w-full h-[90vh] flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading graph...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full h-[90vh] relative">
+      {saving && (
+        <div className="absolute top-4 right-4 z-20 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-3 py-2 rounded-lg text-sm font-medium flex items-center gap-2">
+          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-indigo-600 dark:border-indigo-400"></div>
+          Saving...
+        </div>
+      )}
+      
       <div className="w-full h-full">
         {treeData ? (
           <Tree

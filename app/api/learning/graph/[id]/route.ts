@@ -1,0 +1,62 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { DatabaseService } from '@/lib/mongodb';
+import { headers } from 'next/headers';
+
+export async function GET(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const topicId = params.id;
+    const graph = await DatabaseService.getLearningGraph(session.user.id, topicId);
+
+    return NextResponse.json({ graph });
+  } catch (error) {
+    console.error('Error fetching learning graph:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch learning graph' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const session = await auth.api.getSession({
+      headers: await headers(),
+    });
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const topicId = params.id;
+    const { rootNode } = await request.json();
+
+    if (!rootNode) {
+      return NextResponse.json({ error: 'Root node is required' }, { status: 400 });
+    }
+
+    await DatabaseService.saveLearningGraph(session.user.id, topicId, rootNode);
+
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error saving learning graph:', error);
+    return NextResponse.json(
+      { error: 'Failed to save learning graph' },
+      { status: 500 }
+    );
+  }
+}

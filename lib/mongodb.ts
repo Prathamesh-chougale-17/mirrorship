@@ -49,7 +49,10 @@ import {
   YouTubeUpload,
   YouTubeChannel,
   Project,
-  ProjectNote
+  ProjectNote,
+  LearningTopic,
+  LearningNode,
+  LearningGraph
 } from './models';
 import { ObjectId } from 'mongodb';
 
@@ -411,5 +414,115 @@ export class DatabaseService {
     }
 
     return streak;
+  }
+
+  // Learning Topics
+  static async createLearningTopic(
+    userId: string,
+    topic: Omit<LearningTopic, '_id' | 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'isArchived'>
+  ): Promise<LearningTopic> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<LearningTopic>(COLLECTIONS.LEARNING_TOPICS);
+    
+    const timestamp = new Date();
+    const newTopic: LearningTopic = {
+      id: new ObjectId().toString(),
+      userId,
+      ...topic,
+      isArchived: false,
+      createdAt: timestamp,
+      updatedAt: timestamp
+    };
+
+    await collection.insertOne(newTopic);
+    return newTopic;
+  }
+
+  static async getLearningTopics(userId: string, includeArchived: boolean = false): Promise<LearningTopic[]> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<LearningTopic>(COLLECTIONS.LEARNING_TOPICS);
+    
+    const filter: any = { userId };
+    if (!includeArchived) {
+      filter.isArchived = false;
+    }
+
+    return await collection.find(filter).sort({ createdAt: -1 }).toArray();
+  }
+
+  static async getLearningTopicById(userId: string, topicId: string): Promise<LearningTopic | null> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<LearningTopic>(COLLECTIONS.LEARNING_TOPICS);
+    
+    return await collection.findOne({ userId, id: topicId });
+  }
+
+  static async updateLearningTopic(
+    userId: string,
+    topicId: string,
+    updates: Partial<Omit<LearningTopic, '_id' | 'id' | 'userId' | 'createdAt' | 'updatedAt'>>
+  ): Promise<void> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<LearningTopic>(COLLECTIONS.LEARNING_TOPICS);
+    
+    await collection.updateOne(
+      { userId, id: topicId },
+      {
+        $set: {
+          ...updates,
+          updatedAt: new Date()
+        }
+      }
+    );
+  }
+
+  static async deleteLearningTopic(userId: string, topicId: string): Promise<void> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    
+    // Delete the topic
+    const topicsCollection = db.collection<LearningTopic>(COLLECTIONS.LEARNING_TOPICS);
+    await topicsCollection.deleteOne({ userId, id: topicId });
+    
+    // Delete associated graph
+    const graphsCollection = db.collection<LearningGraph>(COLLECTIONS.LEARNING_GRAPHS);
+    await graphsCollection.deleteOne({ userId, topicId });
+  }
+
+  // Learning Graphs
+  static async saveLearningGraph(
+    userId: string,
+    topicId: string,
+    rootNode: LearningNode
+  ): Promise<void> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<LearningGraph>(COLLECTIONS.LEARNING_GRAPHS);
+    
+    const timestamp = new Date();
+    await collection.replaceOne(
+      { userId, topicId },
+      {
+        id: new ObjectId().toString(),
+        userId,
+        topicId,
+        rootNode,
+        createdAt: timestamp,
+        updatedAt: timestamp
+      },
+      { upsert: true }
+    );
+  }
+
+  static async getLearningGraph(userId: string, topicId: string): Promise<LearningGraph | null> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<LearningGraph>(COLLECTIONS.LEARNING_GRAPHS);
+    
+    return await collection.findOne({ userId, topicId });
   }
 }
