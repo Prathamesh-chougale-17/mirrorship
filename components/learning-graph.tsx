@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import Tree from 'react-d3-tree';
 import { Plus, FileText, Link, Youtube, X, Edit2, Trash2, Save, FolderPlus, Eye, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
@@ -351,9 +352,17 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
   if (loading) {
     return (
       <div className="w-full h-[90vh] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-300">Loading graph...</p>
+        <div className="w-full max-w-4xl p-4">
+          <Skeleton className="h-12 w-48 mb-4" />
+          <div className="grid grid-cols-3 gap-4">
+            <Skeleton className="h-32 col-span-1" />
+            <Skeleton className="h-32 col-span-1" />
+            <Skeleton className="h-32 col-span-1" />
+          </div>
+          <div className="mt-4">
+            <Skeleton className="h-6 w-1/2 mb-2" />
+            <Skeleton className="h-40 w-full" />
+          </div>
         </div>
       </div>
     );
@@ -370,19 +379,29 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
       
       <div className="w-full h-full">
         {treeData ? (
-          <Tree
-            data={convertToTreeFormat(treeData)}
-            orientation="horizontal"
-            translate={{ x: 120, y: window.innerHeight / 2 - 100 }}
-            nodeSize={{ x: 160, y: 100 }}
-            separation={{ siblings: 1.2, nonSiblings: 1.4 }}
-            renderCustomNodeElement={renderCustomNode}
-            onNodeClick={(node) => handleNodeClick((node.data as any)._fullData || node.data)}
-            pathFunc="diagonal"
-            pathClassFunc={() => "stroke-yellow-400 dark:stroke-yellow-300 stroke-2 fill-none"}
-            enableLegacyTransitions
-            transitionDuration={500}
-          />
+          <>
+            <Tree
+              data={convertToTreeFormat(treeData)}
+              orientation="horizontal"
+              translate={{ x: 120, y: window.innerHeight / 2 - 100 }}
+              nodeSize={{ x: 160, y: 100 }}
+              separation={{ siblings: 1.2, nonSiblings: 1.4 }}
+              renderCustomNodeElement={renderCustomNode}
+              onNodeClick={(node) => handleNodeClick((node.data as any)._fullData || node.data)}
+              pathFunc="diagonal"
+              pathClassFunc={() => 'lr-edge'}
+              enableLegacyTransitions
+              transitionDuration={500}
+            />
+            {/* global style to enforce edge color and thickness */}
+            <style jsx global>{`
+              .lr-edge {
+                stroke: #2961dbff !important;
+                stroke-width: 2 !important;
+                fill: none !important;
+              }
+            `}</style>
+          </>
         ) : (
           <div className="flex items-center justify-center h-full">
             <Card className="p-8 text-center bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-lg dark:shadow-gray-900/20 border-dashed border-2 border-indigo-200 dark:border-indigo-600">

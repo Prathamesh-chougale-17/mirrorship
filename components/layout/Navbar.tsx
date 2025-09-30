@@ -69,12 +69,12 @@ export function Navbar() {
   };
 
   const navItems = [
-    { href: "/learning", label: "Learning", icon: FolderPlus, public: false },
     { href: "/", label: "Home", icon: Home, public: true },
     { href: "/dashboard", label: "Dashboard", icon: BarChart3, public: false },
     { href: "/diary", label: "Diary", icon: BookOpen, public: false },
     { href: "/aims", label: "Aims", icon: TargetIcon, public: false },
     { href: "/profile", label: "Profile", icon: User, public: false },
+    { href: "/learning", label: "Learning", icon: FolderPlus, public: false },
     {
       href: "/projects", label: "Projects", icon: Github, public: false
     }
