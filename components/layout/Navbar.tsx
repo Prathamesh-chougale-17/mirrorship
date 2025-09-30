@@ -14,7 +14,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { AnimatedThemeToggler } from "@/components/ui/animated-theme-toggler";
 import { useSession, signOut } from "@/lib/auth-client";
-import { User, Settings, LogOut, BookOpen, BarChart3, Home,  Github, TargetIcon } from "lucide-react";
+import { User, Settings, LogOut, BookOpen, BarChart3, Home,  Github, TargetIcon, FolderPlus } from "lucide-react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 
@@ -69,6 +69,7 @@ export function Navbar() {
   };
 
   const navItems = [
+    { href: "/learning", label: "Learning", icon: FolderPlus, public: false },
     { href: "/", label: "Home", icon: Home, public: true },
     { href: "/dashboard", label: "Dashboard", icon: BarChart3, public: false },
     { href: "/diary", label: "Diary", icon: BookOpen, public: false },

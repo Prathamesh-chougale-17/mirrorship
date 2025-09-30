@@ -93,6 +93,8 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
       if (!response.ok) {
         throw new Error('Failed to save');
       }
+      // show success toast
+      toast.success('Graph saved');
     } catch (error) {
       console.error('Error saving graph:', error);
       toast.error('Failed to save graph');
@@ -377,7 +379,7 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
             renderCustomNodeElement={renderCustomNode}
             onNodeClick={(node) => handleNodeClick((node.data as any)._fullData || node.data)}
             pathFunc="diagonal"
-            pathClassFunc={() => "stroke-blue-300 dark:stroke-white stroke-2 fill-none"}
+            pathClassFunc={() => "stroke-yellow-400 dark:stroke-yellow-300 stroke-2 fill-none"}
             enableLegacyTransitions
             transitionDuration={500}
           />

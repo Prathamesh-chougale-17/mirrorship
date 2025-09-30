@@ -5,7 +5,7 @@ import { headers } from 'next/headers';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth.api.getSession({
@@ -16,7 +16,7 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const topicId = params.id;
+    const { id: topicId } = (await params) as { id: string };
     const graph = await DatabaseService.getLearningGraph(session.user.id, topicId);
 
     return NextResponse.json({ graph });
@@ -31,7 +31,7 @@ export async function GET(
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth.api.getSession({
@@ -42,7 +42,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const topicId = params.id;
+  const { id: topicId } = (await params) as { id: string };
     const { rootNode } = await request.json();
 
     if (!rootNode) {
