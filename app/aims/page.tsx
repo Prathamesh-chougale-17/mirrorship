@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogAction, AlertDialogCancel } from "@/components/ui/alert-dialog";
 import { KanbanProvider, KanbanBoard, KanbanHeader, KanbanCards, KanbanCard } from "@/components/ui/kibo-ui/kanban";
 import { Plus, Target, Clock, AlertCircle, CheckCircle, MoreHorizontal, Trash2, Edit } from "lucide-react";
 import React from "react";
@@ -54,6 +55,9 @@ export default function NotesPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [selectedNote, setSelectedNote] = useState<KanbanNote | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   
   // Form state
   const [title, setTitle] = useState("");
@@ -160,10 +164,16 @@ export default function NotesPage() {
   };
 
   const handleDelete = async (noteId: string) => {
-    if (!confirm("Are you sure you want to delete this note?")) return;
+    // open confirmation dialog instead — this function will be used by the confirm flow
+    setNoteToDelete(noteId);
+    setDeleteDialogOpen(true);
+  };
 
+  const confirmDelete = async () => {
+    if (!noteToDelete) return;
+    setIsDeleting(true);
     try {
-      const response = await fetch(`/api/kanban?id=${noteId}`, {
+      const response = await fetch(`/api/kanban?id=${noteToDelete}`, {
         method: "DELETE",
       });
 
@@ -173,10 +183,14 @@ export default function NotesPage() {
       }
 
       toast.success("Note deleted!");
+      setDeleteDialogOpen(false);
+      setNoteToDelete(null);
       fetchNotes();
     } catch (error) {
       console.error("Error deleting note:", error);
       toast.error(error instanceof Error ? error.message : "Failed to delete note");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -411,6 +425,7 @@ export default function NotesPage() {
                           <h4 className="font-medium text-sm leading-tight">{note.title}</h4>
                           <div className="flex items-center gap-1 ml-2">
                             <Button
+                              type="button"
                               variant="ghost"
                               size="sm"
                               onClick={() => openEditDialog(note)}
@@ -419,6 +434,7 @@ export default function NotesPage() {
                               <Edit className="h-3 w-3" />
                             </Button>
                             <Button
+                              type="button"
                               variant="ghost"
                               size="sm"
                               onClick={() => handleDelete(note.id)}
@@ -477,6 +493,34 @@ export default function NotesPage() {
           </Button>
         </div>
       )}
+      {/* Delete confirmation dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete note</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this note? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setDeleteDialogOpen(false);
+                setNoteToDelete(null);
+              }}
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700 text-white"
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
