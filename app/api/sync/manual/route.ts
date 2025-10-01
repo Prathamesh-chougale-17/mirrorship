@@ -376,10 +376,25 @@ export async function POST(request: NextRequest) {
           throw new Error('LeetCode username not configured');
         }
         
-        results.leetcode = await syncLeetCodeData(
-          user.id,
-          platformSettings.leetcode.username
-        );
+        // Delegate to the dedicated LeetCode sync route which fetches and saves submissions.
+        // Forward the original request cookies so the leetcode route sees the same session.
+        const origin = new URL(request.url).origin;
+        const leetResp = await fetch(`${origin}/api/sync/leetcode`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'cookie': request.headers.get('cookie') || ''
+          },
+          body: JSON.stringify({ leetcodeUsername: platformSettings.leetcode.username })
+        });
+
+        if (!leetResp.ok) {
+          const errText = await leetResp.text();
+          throw new Error(`LeetCode sync route failed: ${leetResp.status} ${leetResp.statusText} - ${errText}`);
+        }
+
+        const leetResult = await leetResp.json();
+        results.leetcode = leetResult;
       } catch (error: any) {
         console.error('LeetCode sync error:', error);
         results.errors.push(`LeetCode sync failed: ${error.message}`);

@@ -29,8 +29,9 @@ const syncRequestSchema = z.object({
 });
 
 async function fetchFromLeetCodeAPI(
-  username: string, 
-  startDate?: Date, 
+  username: string,
+  sessionCookie?: string,
+  startDate?: Date,
   endDate?: Date
 ): Promise<Array<Omit<LeetCodeSubmission, '_id' | 'userId' | 'createdAt' | 'updatedAt'>>> {
   try {
@@ -39,8 +40,13 @@ async function fetchFromLeetCodeAPI(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'Mirrorship-App',
-        'Referer': 'https://leetcode.com/'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/plain, */*',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Origin': 'https://leetcode.com',
+        'Referer': 'https://leetcode.com/',
+        'X-Requested-With': 'XMLHttpRequest',
+        ...(sessionCookie ? { 'cookie': sessionCookie } : {})
       },
       body: JSON.stringify({
         query: `
@@ -71,12 +77,6 @@ async function fetchFromLeetCodeAPI(
                   submissions
                 }
               }
-              recentAcSubmissionList {
-                id
-                title
-                titleSlug
-                timestamp
-              }
             }
           }
         `,
@@ -88,7 +88,9 @@ async function fetchFromLeetCodeAPI(
     });
 
     if (!response.ok) {
-      throw new Error(`LeetCode API error: ${response.status}`);
+      const errText = await response.text();
+      console.error('LeetCode API non-ok response', { status: response.status, statusText: response.statusText, body: errText });
+      throw new Error(`LeetCode API error: ${response.status}. ${errText.substring(0,200)}`);
     }
 
     const data = await response.json();
@@ -100,32 +102,9 @@ async function fetchFromLeetCodeAPI(
     const matchedUser = data.data.matchedUser;
     const submissions: Array<Omit<LeetCodeSubmission, '_id' | 'userId' | 'createdAt' | 'updatedAt'>> = [];
 
-    // Process recent submissions if available
-    const recentSubmissions = matchedUser.recentAcSubmissionList || [];
-    recentSubmissions.forEach((submission: any, index: number) => {
-      const submissionDate = new Date(parseInt(submission.timestamp) * 1000);
-      
-      // Filter by date range
-      if (startDate && submissionDate < startDate) return;
-      if (endDate && submissionDate > endDate) return;
-
-      submissions.push({
-        submissionId: submission.id || `recent-${index}`,
-        problemTitle: submission.title,
-        problemSlug: submission.titleSlug,
-        difficulty: 'Easy', // Default since we don't get difficulty from recent submissions
-        status: 'Accepted', // Recent accepted submissions
-        language: 'Unknown', // Not available in this API response
-        runtime: undefined,
-        memory: undefined,
-        submissionDate: submissionDate,
-        problemUrl: `https://leetcode.com/problems/${submission.titleSlug}/`
-      });
-    });
-
-    // If no recent submissions or we need more data, process calendar data
+    // Process calendar data (fallback / source of truth)
     const submissionCalendar = matchedUser.userCalendar?.submissionCalendar;
-    if (submissionCalendar && submissions.length === 0) {
+    if (submissionCalendar) {
       const calendarData = JSON.parse(submissionCalendar);
       
       for (const [timestamp, count] of Object.entries(calendarData)) {
@@ -221,7 +200,7 @@ async function fetchLeetCodeSubmissions(
 ): Promise<Array<Omit<LeetCodeSubmission, '_id' | 'userId' | 'createdAt' | 'updatedAt'>>> {
   try {
     // Use LeetCode GraphQL API (similar to the cp-api implementation)
-    const submissions = await fetchFromLeetCodeAPI(username, startDate, endDate);
+    const submissions = await fetchFromLeetCodeAPI(username, sessionCookie, startDate, endDate);
     
     return submissions;
 
