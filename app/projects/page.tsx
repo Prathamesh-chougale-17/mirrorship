@@ -68,6 +68,8 @@ export default function ProjectsPage() {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const router = useRouter();
+  const [pendingDeleteProject, setPendingDeleteProject] = useState<Project | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   
   // Form state
   const [title, setTitle] = useState("");
@@ -232,8 +234,6 @@ export default function ProjectsPage() {
   };
 
   const handleDelete = async (projectId: string) => {
-    if (!confirm("Are you sure you want to delete this project? This will also delete all project notes.")) return;
-
     try {
       const response = await fetch(`/api/projects?id=${projectId}`, {
         method: "DELETE",
@@ -249,7 +249,15 @@ export default function ProjectsPage() {
     } catch (error) {
       console.error("Error deleting project:", error);
       toast.error(error instanceof Error ? error.message : "Failed to delete project");
+    } finally {
+      setPendingDeleteProject(null);
+      setIsDeleteDialogOpen(false);
     }
+  };
+
+  const requestDelete = (project: Project) => {
+    setPendingDeleteProject(project);
+    setIsDeleteDialogOpen(true);
   };
 
   const addTechStack = () => {
@@ -584,6 +592,20 @@ export default function ProjectsPage() {
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Delete confirmation dialog (shadcn) */}
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Delete project</DialogTitle>
+              <DialogDescription>Are you sure you want to delete this project? This action cannot be undone.</DialogDescription>
+            </DialogHeader>
+            <div className="flex gap-2 mt-4 justify-end">
+              <Button variant="outline" onClick={() => { setIsDeleteDialogOpen(false); setPendingDeleteProject(null); }}>Cancel</Button>
+              <Button className="bg-destructive text-white" onClick={() => pendingDeleteProject && handleDelete(pendingDeleteProject.id)}>Delete</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Projects Grid */}
@@ -606,12 +628,24 @@ export default function ProjectsPage() {
               <h2 className="text-xl font-semibold">Projects</h2>
               <p className="text-sm text-muted-foreground">Products you built</p>
             </div>
-            <ProjectsGrid
-              projects={productProjects}
-              onEdit={(p) => openEditDialog(p)}
-              onDelete={(id) => handleDelete(id)}
-              onOpen={(p) => handleProjectClick(p)}
-            />
+            {productProjects.length === 0 ? (
+              <div className="border border-dashed rounded-md p-6 text-center">
+                <FolderOpen className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                <h3 className="font-medium">No projects yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">Create your first product project to showcase it.</p>
+                <Button onClick={openCreateDialog} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" /> Create Project
+                </Button>
+              </div>
+            ) : (
+              <ProjectsGrid
+                projects={productProjects}
+                onEdit={(p) => openEditDialog(p)}
+                onDelete={(id) => handleDelete(id)}
+                onOpen={(p) => handleProjectClick(p)}
+                onRequestDelete={(p) => requestDelete(p)}
+              />
+            )}
           </div>
 
           <div>
@@ -619,12 +653,24 @@ export default function ProjectsPage() {
               <h2 className="text-xl font-semibold">Templates</h2>
               <p className="text-sm text-muted-foreground">Reusable starters and templates</p>
             </div>
-            <ProjectsGrid
-              projects={templateProjects}
-              onEdit={(p) => openEditDialog(p)}
-              onDelete={(id) => handleDelete(id)}
-              onOpen={(p) => handleProjectClick(p)}
-            />
+            {templateProjects.length === 0 ? (
+              <div className="border border-dashed rounded-md p-6 text-center">
+                <Layers3 className="mx-auto h-8 w-8 text-muted-foreground mb-2" />
+                <h3 className="font-medium">No templates yet</h3>
+                <p className="text-sm text-muted-foreground mb-4">Create a template to reuse for future projects.</p>
+                <Button onClick={openCreateDialog} variant="outline">
+                  <Plus className="h-4 w-4 mr-2" /> Create Template
+                </Button>
+              </div>
+            ) : (
+              <ProjectsGrid
+                projects={templateProjects}
+                onEdit={(p) => openEditDialog(p)}
+                onDelete={(id) => handleDelete(id)}
+                onOpen={(p) => handleProjectClick(p)}
+                onRequestDelete={(p) => requestDelete(p)}
+              />
+            )}
           </div>
         </div>
       )}
