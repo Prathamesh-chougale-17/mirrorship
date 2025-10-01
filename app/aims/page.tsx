@@ -428,7 +428,12 @@ export default function NotesPage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => openEditDialog(note)}
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                openEditDialog(note);
+                              }}
                               className="h-6 w-6 p-0"
                             >
                               <Edit className="h-3 w-3" />
@@ -437,7 +442,12 @@ export default function NotesPage() {
                               type="button"
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleDelete(note.id)}
+                              onPointerDown={(e) => e.stopPropagation()}
+                              onMouseDown={(e) => e.stopPropagation()}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDelete(note.id);
+                              }}
                               className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
                             >
                               <Trash2 className="h-3 w-3" />
