@@ -229,4 +229,28 @@ Focus on:
       };
     }
   }
+
+  /**
+   * Generate a short motivational quote based on recent diary entries.
+   */
+  static async generateMotivationalQuote(recentEntries: DiaryEntry[]): Promise<string> {
+    try {
+      const context = recentEntries
+        .map(e => `${e.date}: ${e.title} - ${e.content.substring(0, 200)}`)
+        .join('\n\n');
+
+      const prompt = `You are a friendly coach. Based on the following recent diary snippets, produce one short (1-2 sentence) motivational quote focused on studying, interviews, coding, and learning. Keep it positive, concise, and actionable.\n\nContext:\n${context}\n\nRespond with just the quote text.`;
+
+      const { text } = await generateText({
+        model: this.model,
+        prompt,
+        temperature: 0.7,
+      });
+
+      return text.trim().replace(/^"|"$/g, '');
+    } catch (error) {
+      console.error('Error generating motivational quote:', error);
+      return 'Keep going — small steps every day lead to big progress.';
+    }
+  }
 }

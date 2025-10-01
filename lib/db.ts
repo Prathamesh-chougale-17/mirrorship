@@ -122,6 +122,35 @@ export class DatabaseService {
     }));
   }
 
+  // Daily Quote operations
+  static async createDailyQuote(quote: { id: string; userId: string; date: string; quote: string; source?: string }) {
+    const db = await this.getDb();
+    const result = await db.collection(COLLECTIONS.DAILY_QUOTES).insertOne({
+      ...quote,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
+    return result;
+  }
+
+  static async getDailyQuote(userId: string, date: string) {
+    const db = await this.getDb();
+    const quote = await db.collection(COLLECTIONS.DAILY_QUOTES).findOne({ userId, date });
+    return quote;
+  }
+
+  // Helper: get latest N diary entries (excluding a specific date) for context
+  static async getLatestDiaryEntriesForContext(userId: string, excludeDate: string, limit = 5) {
+    const db = await this.getDb();
+    const entries = await db
+      .collection(COLLECTIONS.DIARY_ENTRIES)
+      .find({ userId, date: { $ne: excludeDate } })
+      .sort({ date: -1 })
+      .limit(limit)
+      .toArray();
+    return entries;
+  }
+
   // Kanban Note operations
   static async createKanbanNote(note: Omit<KanbanNote, "_id">) {
     const db = await this.getDb();

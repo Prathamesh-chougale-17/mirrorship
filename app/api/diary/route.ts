@@ -145,10 +145,31 @@ export async function POST(req: NextRequest) {
     const result = await DatabaseService.createDiaryEntry(entryData);
 
     if (result.acknowledged) {
+      try {
+        // Ensure a single daily motivational quote is created per user/date
+        const existingQuote = await DatabaseService.getDailyQuote(user.id, validatedData.date);
+        if (!existingQuote) {
+          // Get recent entries for context (exclude today's date)
+          const recent = await DatabaseService.getLatestDiaryEntriesForContext(user.id, validatedData.date, 5);
+          const quoteText = await AIService.generateMotivationalQuote(recent as any as import("@/lib/models").DiaryEntry[]);
+          await DatabaseService.createDailyQuote({
+            id: crypto.randomUUID(),
+            userId: user.id,
+            date: validatedData.date,
+            quote: quoteText,
+            source: 'ai-generated',
+          });
+        }
+      } catch (qError) {
+        console.error('Error generating/storing daily quote:', qError);
+        // Continue without blocking diary creation
+      }
       return NextResponse.json(
         { 
           message: "Diary entry created successfully",
           entry: entryData,
+          // Include today's quote if available (non-blocking)
+          quote: await DatabaseService.getDailyQuote(user.id, validatedData.date)
         },
         { status: 201 }
       );

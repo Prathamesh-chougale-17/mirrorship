@@ -10,9 +10,10 @@ interface DashboardHeaderProps {
   isSyncing: boolean;
   onSync: () => void;
   isLoading?: boolean;
+  dailyQuote?: string | null;
 }
 
-export function DashboardHeader({ userName, isSyncing, onSync, isLoading = false }: DashboardHeaderProps) {
+export function DashboardHeader({ userName, isSyncing, onSync, isLoading = false, dailyQuote }: DashboardHeaderProps) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-between">
@@ -33,6 +34,9 @@ export function DashboardHeader({ userName, isSyncing, onSync, isLoading = false
       <div>
         <h1 className="text-2xl font-bold">Welcome back, {userName?.split(' ')[0] || 'User'}! 👋</h1>
         <p className="text-sm text-muted-foreground">Your coding journey at a glance</p>
+        {dailyQuote ? (
+          <p className="mt-2 text-sm italic text-muted-foreground">"{dailyQuote}"</p>
+        ) : null}
       </div>
       <div className="flex gap-2">
         <Button 

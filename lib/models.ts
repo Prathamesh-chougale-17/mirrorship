@@ -81,6 +81,18 @@ export interface AISummary {
   updatedAt: Date;
 }
 
+// Daily Motivational Quote Model
+export interface DailyQuote {
+  _id?: ObjectId;
+  id: string;
+  userId: string;
+  date: string; // YYYY-MM-DD
+  quote: string;
+  source?: string; // optional metadata about how the quote was generated
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 // User Preferences Model
 export interface UserPreferences {
   _id?: ObjectId;
@@ -316,4 +328,6 @@ export const COLLECTIONS = {
   PROJECT_NOTES: "project_notes",
   LEARNING_TOPICS: "learning_topics",
   LEARNING_GRAPHS: "learning_graphs"
+  ,
+  DAILY_QUOTES: "daily_quotes"
 } as const;

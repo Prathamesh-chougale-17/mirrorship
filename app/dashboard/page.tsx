@@ -107,6 +107,7 @@ interface Motivation {
 export default function DashboardPage() {
   const { data: session, isPending } = useSession();
   const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [dailyQuote, setDailyQuote] = useState<string | null>(null);
   const [dashboardLoading, setDashboardLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
@@ -186,6 +187,19 @@ export default function DashboardPage() {
       }
       
       setDashboardData(data);
+      // Fetch today's quote
+      try {
+        const qRes = await fetch(`/api/quotes?date=${new Date().toISOString().split('T')[0]}`);
+        const qData = await qRes.json();
+        if (qRes.ok && qData.quote) {
+          setDailyQuote(qData.quote.quote || null);
+        } else {
+          setDailyQuote(null);
+        }
+      } catch (err) {
+        console.error('Error fetching daily quote:', err);
+        setDailyQuote(null);
+      }
     } catch (error) {
       console.error("Error fetching dashboard data:", error);
     } finally {
@@ -422,6 +436,7 @@ export default function DashboardPage() {
         isSyncing={isSyncing}
         onSync={() => handleManualSync()}
         isLoading={dashboardLoading}
+        dailyQuote={dailyQuote}
       />
 
       {contributionsLoading || platformSettings.isLoading ? (
