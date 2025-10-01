@@ -1,0 +1,22 @@
+export type Project = {
+  id: string;
+  title: string;
+  description: string;
+  type: "template" | "product";
+  techStack: string[];
+  githubUrl?: string;
+  liveUrl?: string;
+  imageUrl?: string;
+  status: "planning" | "in-progress" | "completed" | "on-hold";
+  priority: "low" | "medium" | "high";
+  startDate?: string;
+  completionDate?: string;
+  tags: string[];
+  features: string[];
+  challenges?: string;
+  learnings?: string;
+  isPublic: boolean;
+  noteCount?: number;
+  createdAt: string;
+  updatedAt: string;
+};

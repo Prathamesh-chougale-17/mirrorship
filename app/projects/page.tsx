@@ -32,29 +32,8 @@ import {
 import React from "react";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
-
-interface Project {
-  id: string;
-  title: string;
-  description: string;
-  type: "template" | "product";
-  techStack: string[];
-  githubUrl?: string;
-  liveUrl?: string;
-  imageUrl?: string;
-  status: "planning" | "in-progress" | "completed" | "on-hold";
-  priority: "low" | "medium" | "high";
-  startDate?: string;
-  completionDate?: string;
-  tags: string[];
-  features: string[];
-  challenges?: string;
-  learnings?: string;
-  isPublic: boolean;
-  noteCount?: number;
-  createdAt: string;
-  updatedAt: string;
-}
+import ProjectsGrid from "@/components/projects/ProjectsGrid";
+import { Project } from "@/components/projects/types";
 
 const statusColors = {
   planning: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300",
@@ -119,6 +98,9 @@ export default function ProjectsPage() {
       fetchProjects();
     }
   }, [session?.user]);
+
+  const productProjects = projects.filter(p => p.type === 'product');
+  const templateProjects = projects.filter(p => p.type === 'template');
 
   const fetchProjects = async () => {
     try {
@@ -322,40 +304,32 @@ export default function ProjectsPage() {
           <Skeleton className="h-10 w-32" />
         </div>
 
-        {/* Projects Grid Skeleton */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="h-80">
-              <CardHeader className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Skeleton className="h-6 w-6" />
-                  <Skeleton className="h-6 w-6" />
-                </div>
-                <Skeleton className="h-6 w-3/4" />
-                <Skeleton className="h-4 w-full" />
-                <Skeleton className="h-4 w-2/3" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-1">
-                  {Array.from({ length: 3 }).map((_, j) => (
-                    <Skeleton key={j} className="h-5 w-16" />
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  {Array.from({ length: 2 }).map((_, j) => (
-                    <Skeleton key={j} className="h-5 w-12" />
-                  ))}
-                </div>
-                <div className="flex items-center justify-between pt-4">
-                  <Skeleton className="h-6 w-20" />
-                  <div className="flex gap-2">
-                    <Skeleton className="h-8 w-8" />
-                    <Skeleton className="h-8 w-8" />
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+        {/* Products Section Skeleton */}
+        <div className="mb-6">
+          <Skeleton className="h-6 w-40 mb-4" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="h-36 p-2">
+                <Skeleton className="h-10 w-full mb-2" />
+                <Skeleton className="h-4 w-3/4 mb-1" />
+                <Skeleton className="h-3 w-5/6" />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Templates Section Skeleton */}
+        <div className="mb-6">
+          <Skeleton className="h-6 w-40 mb-4" />
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-36 p-2">
+                <Skeleton className="h-10 w-full mb-2" />
+                <Skeleton className="h-4 w-3/4 mb-1" />
+                <Skeleton className="h-3 w-5/6" />
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -626,133 +600,32 @@ export default function ProjectsPage() {
           </Button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => {
-            const StatusIcon = statusIcons[project.status];
-            const TypeIcon = typeIcons[project.type];
-            
-            return (
-              <Card key={project.id} className="group cursor-pointer hover:shadow-lg transition-all duration-200 hover:scale-[1.02]">
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-2">
-                      <TypeIcon className="h-5 w-5 text-muted-foreground" />
-                      <Badge variant="outline" className="text-xs">
-                        {project.type}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); openEditDialog(project); }}
-                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Edit className="h-3 w-3" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => { e.stopPropagation(); handleDelete(project.id); }}
-                        className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  </div>
-                  <div onClick={() => handleProjectClick(project)}>
-                    <CardTitle className="text-lg line-clamp-1">{project.title}</CardTitle>
-                    <CardDescription className="line-clamp-2 mt-1">
-                      {project.description}
-                    </CardDescription>
-                  </div>
-                </CardHeader>
-                <CardContent onClick={() => handleProjectClick(project)}>
-                  <div className="space-y-4">
-                    {/* Tech Stack */}
-                    {project.techStack?.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {project.techStack.slice(0, 4).map((tech) => (
-                          <Badge key={tech} variant="secondary" className="text-xs">
-                            {tech}
-                          </Badge>
-                        ))}
-                        {project.techStack.length > 4 && (
-                          <Badge variant="secondary" className="text-xs">
-                            +{project.techStack.length - 4}
-                          </Badge>
-                        )}
-                      </div>
-                    )}
+        <div className="space-y-8">
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Projects</h2>
+              <p className="text-sm text-muted-foreground">Products you built</p>
+            </div>
+            <ProjectsGrid
+              projects={productProjects}
+              onEdit={(p) => openEditDialog(p)}
+              onDelete={(id) => handleDelete(id)}
+              onOpen={(p) => handleProjectClick(p)}
+            />
+          </div>
 
-                    {/* Tags */}
-                    {project.tags?.length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {project.tags.slice(0, 3).map((tag) => (
-                          <Badge key={tag} variant="outline" className="text-xs">
-                            {tag}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Status and Priority */}
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Badge className={`text-xs ${statusColors[project.status]}`}>
-                          <StatusIcon className="h-3 w-3 mr-1" />
-                          {project.status.replace('-', ' ')}
-                        </Badge>
-                        <Badge className={`text-xs ${priorityColors[project.priority]}`}>
-                          {project.priority}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-1 text-muted-foreground">
-                        {project.noteCount && project.noteCount > 0 && (
-                          <div className="flex items-center gap-1">
-                            <StickyNote className="h-4 w-4" />
-                            <span className="text-xs">{project.noteCount}</span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Links */}
-                    <div className="flex items-center gap-2 pt-2">
-                      {project.githubUrl && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            window.open(project.githubUrl, '_blank'); 
-                          }}
-                          className="h-8 px-2"
-                        >
-                          <Github className="h-4 w-4 mr-1" />
-                          Code
-                        </Button>
-                      )}
-                      {project.liveUrl && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={(e) => { 
-                            e.stopPropagation(); 
-                            window.open(project.liveUrl, '_blank'); 
-                          }}
-                          className="h-8 px-2"
-                        >
-                          <ExternalLink className="h-4 w-4 mr-1" />
-                          Live
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Templates</h2>
+              <p className="text-sm text-muted-foreground">Reusable starters and templates</p>
+            </div>
+            <ProjectsGrid
+              projects={templateProjects}
+              onEdit={(p) => openEditDialog(p)}
+              onDelete={(id) => handleDelete(id)}
+              onOpen={(p) => handleProjectClick(p)}
+            />
+          </div>
         </div>
       )}
     </div>
