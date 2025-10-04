@@ -497,7 +497,8 @@ export class DatabaseService {
   static async saveLearningGraph(
     userId: string,
     topicId: string,
-    rootNode: LearningNode
+    rootNode: LearningNode,
+    viewSettings?: { orientation?: 'horizontal' | 'vertical'; spacing?: number }
   ): Promise<void> {
     await client.connect();
     const db = client.db(DB_NAME);
@@ -511,6 +512,7 @@ export class DatabaseService {
         userId,
         topicId,
         rootNode,
+        viewSettings: viewSettings || null,
         createdAt: timestamp,
         updatedAt: timestamp
       },
@@ -524,5 +526,43 @@ export class DatabaseService {
     const collection = db.collection<LearningGraph>(COLLECTIONS.LEARNING_GRAPHS);
     
     return await collection.findOne({ userId, topicId });
+  }
+
+  // Separate helpers for view settings
+  static async saveLearningGraphSettings(
+    userId: string,
+    topicId: string,
+    viewSettings: { orientation?: 'horizontal' | 'vertical'; spacing?: number }
+  ): Promise<void> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<LearningGraph>(COLLECTIONS.LEARNING_GRAPHS);
+
+    const timestamp = new Date();
+    await collection.updateOne(
+      { userId, topicId },
+      {
+        $set: {
+          viewSettings,
+          updatedAt: timestamp
+        },
+        $setOnInsert: {
+          id: new ObjectId().toString(),
+          userId,
+          topicId,
+          createdAt: timestamp
+        }
+      },
+      { upsert: true }
+    );
+  }
+
+  static async getLearningGraphSettings(userId: string, topicId: string): Promise<{ orientation?: 'horizontal' | 'vertical'; spacing?: number } | null> {
+    await client.connect();
+    const db = client.db(DB_NAME);
+    const collection = db.collection<LearningGraph>(COLLECTIONS.LEARNING_GRAPHS);
+
+    const doc = await collection.findOne({ userId, topicId }, { projection: { viewSettings: 1 } });
+    return doc?.viewSettings || null;
   }
 }

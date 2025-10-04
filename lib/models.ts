@@ -307,6 +307,11 @@ export interface LearningGraph {
   userId: string;
   topicId: string; // Reference to LearningTopic
   rootNode: LearningNode;
+  // Optional view settings for client (orientation, spacing etc.)
+  viewSettings?: {
+    orientation?: 'horizontal' | 'vertical';
+    spacing?: number;
+  } | null;
   createdAt: Date;
   updatedAt: Date;
 }

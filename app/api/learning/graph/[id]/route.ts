@@ -18,8 +18,9 @@ export async function GET(
 
     const { id: topicId } = (await params) as { id: string };
     const graph = await DatabaseService.getLearningGraph(session.user.id, topicId);
+    const viewSettings = await DatabaseService.getLearningGraphSettings(session.user.id, topicId);
 
-    return NextResponse.json({ graph });
+    return NextResponse.json({ graph, viewSettings });
   } catch (error) {
     console.error('Error fetching learning graph:', error);
     return NextResponse.json(
@@ -43,13 +44,18 @@ export async function POST(
     }
 
   const { id: topicId } = (await params) as { id: string };
-    const { rootNode } = await request.json();
+    const body = await request.json();
+    const { rootNode, viewSettings } = body || {};
 
     if (!rootNode) {
       return NextResponse.json({ error: 'Root node is required' }, { status: 400 });
     }
 
-    await DatabaseService.saveLearningGraph(session.user.id, topicId, rootNode);
+    await DatabaseService.saveLearningGraph(session.user.id, topicId, rootNode, viewSettings);
+
+    if (viewSettings) {
+      await DatabaseService.saveLearningGraphSettings(session.user.id, topicId, viewSettings);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

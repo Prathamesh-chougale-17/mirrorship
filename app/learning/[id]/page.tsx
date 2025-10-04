@@ -62,31 +62,7 @@ const LearningGraphPage = () => {
   }
 
   return (
-    <div className="w-full h-screen flex flex-col bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-900 dark:to-slate-800">
-      <div className="absolute top-4 left-4 z-20 flex items-center gap-4">
-        <Button
-          variant="outline"
-          onClick={() => router.push('/learning')}
-          className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-gray-200 dark:border-gray-700"
-        >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Back to Topics
-        </Button>
-        <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">{topic.icon}</span>
-            <h2 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
-              {topic.title}
-            </h2>
-          </div>
-          {topic.description && (
-            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-              {topic.description}
-            </p>
-          )}
-        </div>
-      </div>
-
+    <div className="w-full h-[76.5vh] flex flex-col">
       <GraphicalNotes topicId={topicId} />
     </div>
   );

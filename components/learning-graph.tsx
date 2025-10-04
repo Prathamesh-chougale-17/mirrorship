@@ -13,6 +13,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
+import { Slider } from '@/components/ui/slider';
 
 interface NodeData {
   id?: string;
@@ -42,6 +51,9 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
   const [nodeToDelete, setNodeToDelete] = useState<NodeData | null>(null);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  // UI settings: orientation and spacing between nodes
+  const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
+  const [spacing, setSpacing] = useState<number>(160); // nodeSize.x default
   const [formData, setFormData] = useState({
     title: '',
     notes: '',
@@ -51,6 +63,7 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
 
   useEffect(() => {
     loadGraph();
+    loadSettings();
   }, [topicId]);
 
   // Auto-save whenever treeData changes
@@ -115,6 +128,76 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
       }
     }
     return null;
+  };
+
+  const SETTINGS_KEY = `learning-graph-settings:${topicId}`;
+
+  const loadSettings = () => {
+    try {
+      if (typeof window === 'undefined') return;
+      // Load from localStorage first
+      const raw = window.localStorage.getItem(SETTINGS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (parsed.orientation) setOrientation(parsed.orientation);
+        if (typeof parsed.spacing === 'number') setSpacing(parsed.spacing);
+      }
+
+      // Try to fetch server-side saved settings (if user is authenticated)
+      fetch(`/api/learning/graph/${topicId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data?.viewSettings) {
+            if (data.viewSettings.orientation) setOrientation(data.viewSettings.orientation);
+            if (typeof data.viewSettings.spacing === 'number') setSpacing(data.viewSettings.spacing);
+          }
+        })
+        .catch(() => {
+          // ignore errors; client-side settings exist
+        });
+    } catch (err) {
+      console.error('Failed to load settings', err);
+    }
+  };
+
+  const saveSettings = () => {
+    try {
+      if (typeof window === 'undefined') return;
+      const payload = { orientation, spacing };
+      window.localStorage.setItem(SETTINGS_KEY, JSON.stringify(payload));
+
+      // Persist to server-side as well (saves via the graph POST endpoint)
+      fetch(`/api/learning/graph/${topicId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rootNode: treeData || {}, viewSettings: payload })
+      }).then(res => {
+        if (res.ok) {
+          toast.success('Graph view settings saved');
+        } else {
+          toast.error('Failed to save settings to server');
+        }
+      }).catch(err => {
+        console.error('Failed to save settings to server', err);
+        toast.error('Failed to save settings to server');
+      });
+    } catch (err) {
+      console.error('Failed to save settings', err);
+      toast.error('Failed to save settings');
+    }
+  };
+
+  const resetSettings = () => {
+    setOrientation('horizontal');
+    setSpacing(160);
+    try {
+      if (typeof window !== 'undefined') {
+        window.localStorage.removeItem(SETTINGS_KEY);
+      }
+      toast.success('Settings reset');
+    } catch (err) {
+      console.error('Failed to reset settings', err);
+    }
   };
 
   const generateId = () => `node_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -258,6 +341,8 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
   const renderCustomNode = ({ nodeDatum }: { nodeDatum: any }) => {
     const fullData = nodeDatum._fullData || nodeDatum;
     
+    const isVertical = orientation === 'vertical';
+
     return (
       <g>
         <foreignObject x="-70" y="-40" width="140" height="80">
@@ -344,7 +429,12 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
             </CardContent>
           </Card>
         </foreignObject>
-        <circle r="6" cx="70" cy="0" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+        {/* connector dot: to the right for horizontal, at bottom-center for vertical */}
+        {isVertical ? (
+          <circle r="6" cx="0" cy="40" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+        ) : (
+          <circle r="6" cx="70" cy="0" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+        )}
       </g>
     );
   };
@@ -378,13 +468,55 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
       )}
       
       <div className="w-full h-full">
+        {/* Controls dropdown (spacing & orientation) */}
+        <div className="absolute top-4 right-4 z-30">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 w-8 p-0">
+                <Save className="w-4 h-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-64 p-3">
+              <DropdownMenuLabel className="mb-2">Graph View</DropdownMenuLabel>
+              <div className="mb-3">
+                <Label className="text-xs">Orientation</Label>
+                <div className="flex gap-2 mt-2">
+                  <Button size="sm" variant={orientation === 'horizontal' ? undefined : 'ghost'} onClick={() => setOrientation('horizontal')}>Horizontal</Button>
+                  <Button size="sm" variant={orientation === 'vertical' ? undefined : 'ghost'} onClick={() => setOrientation('vertical')}>Vertical</Button>
+                </div>
+              </div>
+
+              <div className="mb-3">
+                <Label className="text-xs">Spacing</Label>
+                <div className="mt-2">
+                  <Slider
+                    value={[spacing]}
+                    min={80}
+                    max={320}
+                    onValueChange={(val: number[] | number) => {
+                      const v = Array.isArray(val) ? val[0] : val;
+                      setSpacing(v);
+                    }}
+                  />
+                  <div className="text-xs text-muted-foreground mt-1">{spacing}px</div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" size="sm" onClick={resetSettings}>Reset</Button>
+                <Button size="sm" onClick={saveSettings} className="bg-indigo-600 hover:bg-indigo-700">Save</Button>
+              </div>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
         {treeData ? (
           <>
             <Tree
               data={convertToTreeFormat(treeData)}
-              orientation="horizontal"
-              translate={{ x: 120, y: window.innerHeight / 2 - 100 }}
-              nodeSize={{ x: 160, y: 100 }}
+              orientation={orientation}
+              translate={{ x: orientation === 'horizontal' ? 120 : window.innerWidth / 2, y: orientation === 'horizontal' ? window.innerHeight / 2 - 100 : 120 }}
+              nodeSize={{ x: spacing, y: 100 }}
               separation={{ siblings: 1.2, nonSiblings: 1.4 }}
               renderCustomNodeElement={renderCustomNode}
               onNodeClick={(node) => handleNodeClick((node.data as any)._fullData || node.data)}
