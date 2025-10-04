@@ -345,15 +345,7 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
 
     return (
       <g>
-        {/* connector dot: single dot behind the card. vertical: slightly below card bottom; horizontal: to the right */}
-        {isVertical ? (
-          // card will be smaller so place the connector just below the bottom edge
-          <circle r="6" cx="0" cy="44" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
-        ) : (
-          <circle r="6" cx="70" cy="0" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
-        )}
-
-        <foreignObject x="-70" y="-40" width="140" height="80">
+        <foreignObject x="-70" y={isVertical ? -56 : -40} width="140" height="80">
           <Card 
             className="relative w-full h-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/60 shadow-sm hover:shadow-lg dark:shadow-gray-900/20 transition-all cursor-pointer text-xs hover:bg-white/95 dark:hover:bg-gray-800/95"
             onClick={(e) => {
@@ -361,9 +353,9 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
               handleNodeClick(fullData);
             }}
           >
-            <CardHeader className="p-2 pb-1">
+            <CardHeader className={isVertical ? 'p-0 pb-0' : 'p-2 pb-1'}>
               <div className={isVertical ? 'flex flex-col items-center gap-1' : 'flex justify-between items-start gap-1'}>
-                <CardTitle className={`text-xs font-medium text-gray-800 dark:text-gray-200 truncate ${isVertical ? 'text-center w-full' : 'flex-1 leading-tight'}`}>
+                <CardTitle className={`text-xs font-medium text-gray-800 dark:text-gray-200 truncate ${isVertical ? 'text-center w-full leading-none' : 'flex-1 leading-tight'}`}>
                   {nodeDatum.name}
                 </CardTitle>
                 {!isVertical && (
@@ -421,6 +413,14 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
             </CardContent>
           </Card>
         </foreignObject>
+
+        {/* connector dot: render after the foreignObject so it appears above the card (higher z-index) */}
+        {isVertical ? (
+          // position the connector a few pixels below the card bottom
+          <circle r="6" cx="0" cy="26" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+        ) : (
+          <circle r="6" cx="70" cy="0" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+        )}
       </g>
     );
   };
