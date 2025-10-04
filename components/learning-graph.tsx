@@ -345,43 +345,44 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
 
     return (
       <g>
+        {/* connector dot: single dot behind the card. vertical: slightly below card bottom; horizontal: to the right */}
+        {isVertical ? (
+          // card will be smaller so place the connector just below the bottom edge
+          <circle r="6" cx="0" cy="44" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+        ) : (
+          <circle r="6" cx="70" cy="0" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+        )}
+
         <foreignObject x="-70" y="-40" width="140" height="80">
           <Card 
-            className="w-full h-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/60 shadow-sm hover:shadow-lg dark:shadow-gray-900/20 transition-all cursor-pointer text-xs hover:bg-white/95 dark:hover:bg-gray-800/95"
+            className="relative w-full h-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border border-gray-200/60 dark:border-gray-600/60 shadow-sm hover:shadow-lg dark:shadow-gray-900/20 transition-all cursor-pointer text-xs hover:bg-white/95 dark:hover:bg-gray-800/95"
             onClick={(e) => {
               e.stopPropagation();
               handleNodeClick(fullData);
             }}
           >
             <CardHeader className="p-2 pb-1">
-              <div className="flex justify-between items-start gap-1">
-                <CardTitle className="text-xs font-medium text-gray-800 dark:text-gray-200 truncate flex-1 leading-tight">
+              <div className={isVertical ? 'flex flex-col items-center gap-1' : 'flex justify-between items-start gap-1'}>
+                <CardTitle className={`text-xs font-medium text-gray-800 dark:text-gray-200 truncate ${isVertical ? 'text-center w-full' : 'flex-1 leading-tight'}`}>
                   {nodeDatum.name}
                 </CardTitle>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-4 w-4 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/30 shrink-0"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddChild(fullData);
-                  }}
-                >
-                  <Plus className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
-                </Button>
+                {!isVertical && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-4 w-4 p-0 hover:bg-blue-100 dark:hover:bg-blue-900/30 shrink-0"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAddChild(fullData);
+                    }}
+                  >
+                    <Plus className="w-2.5 h-2.5 text-blue-600 dark:text-blue-400" />
+                  </Button>
+                )}
               </div>
             </CardHeader>
             
             <CardContent className="p-2 pt-0 space-y-1">
-              {fullData.attributes?.notes && (
-                <div className="flex items-center gap-1">
-                  <FileText className="w-2.5 h-2.5 text-gray-400 dark:text-gray-500 shrink-0" />
-                  <span className="text-[10px] text-gray-600 dark:text-gray-400 truncate">
-                    {fullData.attributes.notes.substring(0, 15)}...
-                  </span>
-                </div>
-              )}
-              
               <div className="flex gap-1 justify-between">
                 <div className="flex gap-1">
                   {fullData.attributes?.resourcesCount > 0 && (
@@ -398,43 +399,28 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
                     </Badge>
                   )}
                 </div>
-                
-                <div className="flex gap-0.5">
+                {/* edit/delete removed as requested */}
+                <div />
+              </div>
+
+              {/* In vertical mode, show the add (+) button below the card content */}
+              {isVertical && (
+                <div className="absolute bottom-2 left-1/2 -translate-x-1/2">
                   <Button
                     size="sm"
-                    variant="ghost"
-                    className="h-4 w-4 p-0 hover:bg-gray-100 dark:hover:bg-gray-700/50"
+                    className="h-7 w-7 p-0 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm"
                     onClick={(e) => {
                       e.stopPropagation();
-                      handleEditNode(fullData);
+                      handleAddChild(fullData);
                     }}
                   >
-                    <Edit2 className="w-2.5 h-2.5 text-gray-500 dark:text-gray-400" />
+                    <Plus className="w-4 h-4" />
                   </Button>
-                  {fullData.id && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="h-4 w-4 p-0 hover:bg-red-100 dark:hover:bg-red-900/30"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteNode(fullData);
-                      }}
-                    >
-                      <Trash2 className="w-2.5 h-2.5 text-red-500 dark:text-red-400" />
-                    </Button>
-                  )}
                 </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </foreignObject>
-        {/* connector dot: to the right for horizontal, at bottom-center for vertical */}
-        {isVertical ? (
-          <circle r="6" cx="0" cy="40" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
-        ) : (
-          <circle r="6" cx="70" cy="0" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
-        )}
       </g>
     );
   };
