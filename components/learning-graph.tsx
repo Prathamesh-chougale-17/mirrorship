@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect } from 'react';
 import Tree from 'react-d3-tree';
-import { Plus, FileText, Link, Youtube, X, Edit2, Trash2, Save, FolderPlus, Eye, ExternalLink, File, PanelBottomIcon } from 'lucide-react';
+import { Plus, FileText, Link, Youtube, X, Edit2, Trash2, Save, FolderPlus, Eye, ExternalLink, File, PanelBottomIcon, Car } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -422,26 +422,34 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
                 )}
               </div>
             </CardHeader>
-            
-            <CardContent className="p-2 pt-0 space-y-1">
-              <div className="flex gap-1 justify-between">
-                <div className="flex gap-1">
+            <CardContent className={isVertical ? 'pt-0 pb-6 px-3' : 'p-2 pt-0'}>
+              <div className="absolute inset-0 rounded-md pointer-events-none">
+              {/* subtle highlight over the whole card */}
+              <div className="absolute rounded-md" />
+
+              {/* badges positioned on top and visible across the card.
+                  parent has pointer-events-none so it won't block card click,
+                  children use pointer-events-auto so badges remain interactive if needed */}
+              <div className="absolute top-1 left-2 right-2 flex justify-between items-start pointer-events-none">
+                <div className="pointer-events-auto flex gap-1">
                   {fullData.attributes?.resourcesCount > 0 && (
-                    <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
-                      <Link className="w-2 h-2 mr-0.5" />
+                    <Badge variant="secondary" className="text-[9px] px-1 py-0 h-5 flex items-center gap-1 bg-white/80 dark:bg-gray-800/80 border border-gray-200/60 dark:border-gray-600/60">
+                      <Link className="w-3 h-3 text-blue-600 dark:text-blue-400" />
                       {fullData.attributes.resourcesCount}
                     </Badge>
                   )}
-                  
+
                   {fullData.attributes?.youtubeLinksCount > 0 && (
-                    <Badge variant="secondary" className="text-[9px] px-1 py-0 h-4">
-                      <Youtube className="w-2 h-2 mr-0.5" />
+                    <Badge variant="secondary" className="text-[9px] px-1 py-0 h-5 flex items-center gap-1 bg-white/80 dark:bg-gray-800/80 border border-gray-200/60 dark:border-gray-600/60">
+                      <Youtube className="w-3 h-3 text-red-600 dark:text-red-400" />
                       {fullData.attributes.youtubeLinksCount}
                     </Badge>
                   )}
                 </div>
-                {/* edit/delete removed as requested */}
-                <div />
+
+                {/* placeholder for future controls; kept pointer-events-auto so you can add interactive buttons later */}
+                <div className="pointer-events-auto" />
+              </div>
               </div>
 
               {/* In vertical mode, show the add (+) button below the card content */}
