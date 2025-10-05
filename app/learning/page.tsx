@@ -112,19 +112,34 @@ const Learning = () => {
   if (loading) {
     return (
       <div className="container mx-auto p-6 min-h-[60vh]">
-        <div className="max-w-4xl mx-auto">
-          <Skeleton className="h-12 w-48 mb-4" />
+          <div className="flex items-center justify-between mb-4">
+            <Skeleton className="h-12 w-48" />
+            <Skeleton className="h-8 w-28" />
+          </div>
           <p className="text-sm text-muted-foreground mb-4">Loading topics...</p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <Skeleton className="h-40" />
-            <Skeleton className="h-40" />
-            <Skeleton className="h-40" />
-            <Skeleton className="h-40" />
-            <Skeleton className="h-40" />
-            <Skeleton className="h-40" />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="p-4 bg-white/80 dark:bg-gray-800/80 rounded-lg h-40 flex flex-col justify-between">
+                <div className="flex items-start gap-4">
+                  {/* icon matches text-4xl (~36px) */}
+                  <Skeleton className="rounded-full h-9 w-9" />
+                  <div className="flex-1">
+                    <Skeleton className="h-5 w-3/4 mb-2" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <Skeleton className="h-6 w-20" />
+                    <Skeleton className="h-6 w-20" />
+                  </div>
+                  <Skeleton className="h-8 w-8" />
+                </div>
+              </div>
+            ))}
           </div>
-        </div>
       </div>
     );
   }

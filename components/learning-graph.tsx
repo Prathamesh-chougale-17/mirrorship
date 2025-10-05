@@ -1,7 +1,7 @@
 "use client"
 import React, { useState, useEffect } from 'react';
 import Tree from 'react-d3-tree';
-import { Plus, FileText, Link, Youtube, X, Edit2, Trash2, Save, FolderPlus, Eye, ExternalLink } from 'lucide-react';
+import { Plus, FileText, Link, Youtube, X, Edit2, Trash2, Save, FolderPlus, Eye, ExternalLink, File, PanelBottomIcon } from 'lucide-react';
 import { toast } from 'sonner';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -56,6 +56,8 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
   const [spacing, setSpacing] = useState<number>(160); // nodeSize.x default
   // Expanded state: Set of node IDs that are explicitly expanded by the user
   const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  // transient animation for connector when toggled
+  const [animatingNode, setAnimatingNode] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     notes: '',
@@ -221,6 +223,25 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
       }
       return newSet;
     });
+    // trigger a small pulse animation on the connector
+    setAnimatingNode(nodeId);
+    setTimeout(() => setAnimatingNode(null), 300);
+  };
+
+  const expandAll = () => {
+    if (!treeData) return;
+    const ids = new Set<string>();
+    const collect = (n: NodeData) => {
+      if (n.id && n.children && n.children.length > 0) ids.add(n.id);
+      if (n.children) n.children.forEach(collect);
+    };
+    collect(treeData);
+    setExpandedNodes(ids);
+  };
+
+  const collapseAll = () => {
+    // clearing expandedNodes causes nodes at depth > 1 to collapse by default
+    setExpandedNodes(new Set());
   };
 
   // convertToTreeFormat now accepts a depth parameter (root = 1)
@@ -496,16 +517,48 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
   if (loading) {
     return (
       <div className="w-full h-[90vh] flex items-center justify-center">
-        <div className="w-full max-w-4xl p-4">
-          <Skeleton className="h-12 w-48 mb-4" />
-          <div className="grid grid-cols-3 gap-4">
-            <Skeleton className="h-32 col-span-1" />
-            <Skeleton className="h-32 col-span-1" />
-            <Skeleton className="h-32 col-span-1" />
+        <div className="w-full max-w-4xl p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <Skeleton className="rounded-full h-12 w-12" />
+              <Skeleton className="h-6 w-48" />
+            </div>
+            <Skeleton className="h-8 w-28" />
           </div>
-          <div className="mt-4">
-            <Skeleton className="h-6 w-1/2 mb-2" />
-            <Skeleton className="h-40 w-full" />
+
+          {/* Graph preview skeleton: central node and surrounding nodes */}
+          <div className="flex items-center justify-center mb-6">
+            <div className="relative w-full h-64 flex items-center justify-center">
+              {/* central node */}
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center">
+                <Skeleton className="rounded-full h-20 w-20" />
+                <Skeleton className="h-4 w-28 mt-2" />
+              </div>
+
+              {/* surrounding nodes */}
+              <div className="absolute left-12 top-12 flex flex-col items-center">
+                <Skeleton className="rounded-full h-12 w-12" />
+                <Skeleton className="h-3 w-20 mt-2" />
+              </div>
+              <div className="absolute right-12 top-12 flex flex-col items-center">
+                <Skeleton className="rounded-full h-12 w-12" />
+                <Skeleton className="h-3 w-20 mt-2" />
+              </div>
+              <div className="absolute left-8 bottom-12 flex flex-col items-center">
+                <Skeleton className="rounded-full h-12 w-12" />
+                <Skeleton className="h-3 w-20 mt-2" />
+              </div>
+              <div className="absolute right-8 bottom-12 flex flex-col items-center">
+                <Skeleton className="rounded-full h-12 w-12" />
+                <Skeleton className="h-3 w-20 mt-2" />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-6">
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-full" />
+            <Skeleton className="h-6 w-full" />
           </div>
         </div>
       </div>
@@ -527,7 +580,7 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="h-8 w-8 p-0">
-                <Save className="w-4 h-4" />
+                <PanelBottomIcon/>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-64 p-3">
@@ -554,6 +607,11 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
                   />
                   <div className="text-xs text-muted-foreground mt-1">{spacing}px</div>
                 </div>
+              </div>
+
+              <div className="mb-3 flex gap-2">
+                <Button size="sm" variant="ghost" onClick={expandAll}>Expand all</Button>
+                <Button size="sm" variant="ghost" onClick={collapseAll}>Collapse all</Button>
               </div>
 
               <div className="flex gap-2 justify-end">
