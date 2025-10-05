@@ -54,6 +54,8 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
   // UI settings: orientation and spacing between nodes
   const [orientation, setOrientation] = useState<'horizontal' | 'vertical'>('horizontal');
   const [spacing, setSpacing] = useState<number>(160); // nodeSize.x default
+  // Expanded state: Set of node IDs that are explicitly expanded by the user
+  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
   const [formData, setFormData] = useState({
     title: '',
     notes: '',
@@ -84,6 +86,8 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
       
       if (data.graph?.rootNode) {
         setTreeData(data.graph.rootNode);
+        // Initialize expanded nodes: start with none expanded (so depth > 1 are collapsed by default)
+        setExpandedNodes(new Set());
       }
     } catch (error) {
       console.error('Error loading graph:', error);
@@ -207,11 +211,31 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
     setViewDialogOpen(true);
   };
 
-  const convertToTreeFormat = (node: NodeData): any => {
+  const toggleCollapse = (nodeId: string) => {
+    setExpandedNodes(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(nodeId)) {
+        newSet.delete(nodeId);
+      } else {
+        newSet.add(nodeId);
+      }
+      return newSet;
+    });
+  };
+
+  // convertToTreeFormat now accepts a depth parameter (root = 1)
+  const convertToTreeFormat = (node: NodeData, depth = 1): any => {
+    const hasChildren = node.children && node.children.length > 0;
+    // Nodes at depth > 1 should be collapsed by default; they are expanded only if in expandedNodes set
+    const defaultCollapsed = depth > 1;
+    const isExplicitlyExpanded = node.id ? expandedNodes.has(node.id) : false;
+    const isCollapsed = defaultCollapsed && !isExplicitlyExpanded;
+
     const converted: any = {
       name: node.name,
       id: node.id,
-      children: node.children?.map(convertToTreeFormat) || []
+      // If node is collapsed, don't include children
+      children: (isCollapsed ? [] : node.children?.map(child => convertToTreeFormat(child, depth + 1))) || []
     };
     
     if (node.attributes) {
@@ -222,6 +246,10 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
       };
       converted._fullData = node;
     }
+    
+    // Store collapse state and whether node has children for rendering
+    converted._isCollapsed = isCollapsed;
+    converted._hasChildren = hasChildren;
     
     return converted;
   };
@@ -415,11 +443,51 @@ const GraphicalNotes = ({ topicId }: GraphicalNotesProps) => {
         </foreignObject>
 
         {/* connector dot: render after the foreignObject so it appears above the card (higher z-index) */}
-        {isVertical ? (
-          // position the connector a few pixels below the card bottom
-          <circle r="6" cx="0" cy="26" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
-        ) : (
-          <circle r="6" cx="70" cy="0" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+        {/* Only show connector if node has children */}
+        {nodeDatum._hasChildren && (
+          <g
+            onClick={(e) => {
+              e.stopPropagation();
+              if (fullData.id) {
+                toggleCollapse(fullData.id);
+              }
+            }}
+            style={{ cursor: 'pointer' }}
+          >
+            {isVertical ? (
+              <>
+                {/* Connector circle */}
+                <circle r="8" cx="0" cy="26" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+                {/* Plus/Minus indicator */}
+                {nodeDatum._isCollapsed ? (
+                  // Show + when collapsed
+                  <>
+                    <line x1="-3" y1="26" x2="3" y2="26" stroke="white" strokeWidth="1.5" />
+                    <line x1="0" y1="23" x2="0" y2="29" stroke="white" strokeWidth="1.5" />
+                  </>
+                ) : (
+                  // Show - when expanded
+                  <line x1="-3" y1="26" x2="3" y2="26" stroke="white" strokeWidth="1.5" />
+                )}
+              </>
+            ) : (
+              <>
+                {/* Connector circle */}
+                <circle r="8" cx="70" cy="0" fill="#3b82f6" stroke="#1d4ed8" strokeWidth="2" className="dark:fill-blue-400 dark:stroke-blue-300" />
+                {/* Plus/Minus indicator */}
+                {nodeDatum._isCollapsed ? (
+                  // Show + when collapsed
+                  <>
+                    <line x1="67" y1="0" x2="73" y2="0" stroke="white" strokeWidth="1.5" />
+                    <line x1="70" y1="-3" x2="70" y2="3" stroke="white" strokeWidth="1.5" />
+                  </>
+                ) : (
+                  // Show - when expanded
+                  <line x1="67" y1="0" x2="73" y2="0" stroke="white" strokeWidth="1.5" />
+                )}
+              </>
+            )}
+          </g>
         )}
       </g>
     );
