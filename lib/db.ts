@@ -135,7 +135,13 @@ export class DatabaseService {
 
   static async getDailyQuote(userId: string, date: string) {
     const db = await this.getDb();
-    const quote = await db.collection(COLLECTIONS.DAILY_QUOTES).findOne({ userId, date });
+    // const quote = await db.collection(COLLECTIONS.DAILY_QUOTES).findOne({ userId, date });
+
+    // Get the most recent quote on or before the given date
+    const quote = await db.collection(COLLECTIONS.DAILY_QUOTES).findOne(
+      { userId },
+      { sort: { date: -1 } }
+    );
     return quote;
   }
 

@@ -1,22 +1,16 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip as ShadcnTooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { 
-  Brain, 
   GitBranch, 
   Target, 
-  Flame, 
   Code, 
   ExternalLink,
-  AlertTriangle,
-  Zap,
-  Trophy,
   BookOpen,
-  Calendar,
   PenTool
 } from "lucide-react";
 import { 
@@ -308,19 +302,6 @@ export function CodingDashboard({
             })()}
             {/* Ultra Compact Stats - 5 Cards in Single Row */}
             <div className="grid grid-cols-5 gap-3 mb-4">
-              {/* Writing Streak */}
-              <Card className="p-3 hover:shadow-md transition-shadow duration-200">
-                <div className="flex items-center gap-2">
-                  <div className="hidden sm:block p-1.5 bg-orange-500/10 rounded-full">
-                    <Flame className="h-3.5 w-3.5 text-orange-500" />
-                  </div>
-                  <div className="flex-1 min-w-0 sm:text-left text-center">
-                    <div className="text-sm font-bold leading-none">{stats?.streak || 0}</div>
-                    <div className="text-[10px] text-muted-foreground mt-0.5 leading-none">Day Streak</div>
-                  </div>
-                </div>
-              </Card>
-
               {/* Total Entries */}
               <Card className="p-3 hover:shadow-md transition-shadow duration-200">
                 <div className="flex items-center gap-2">
